@@ -1,0 +1,348 @@
+﻿namespace MedicineShop.UI
+{
+    partial class AddCompany
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.txttotalprice = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.btnsave = new FontAwesome.Sharp.IconButton();
+            this.addbtn = new FontAwesome.Sharp.IconButton();
+            this.txtContact = new System.Windows.Forms.TextBox();
+            this.lblBatch = new System.Windows.Forms.Label();
+            this.lblProducts = new System.Windows.Forms.Label();
+            this.lblQuantity = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.editbtn = new FontAwesome.Sharp.IconButton();
+            this.txtName = new System.Windows.Forms.TextBox();
+            this.txtAddress = new System.Windows.Forms.TextBox();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.toplbl = new System.Windows.Forms.Label();
+            this.panel2.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // textBox3
+            // 
+            this.textBox3.Location = new System.Drawing.Point(1062, 974);
+            this.textBox3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.textBox3.Name = "textBox3";
+            this.textBox3.Size = new System.Drawing.Size(281, 26);
+            this.textBox3.TabIndex = 209;
+            this.textBox3.TextChanged += new System.EventHandler(this.textBox3_TextChanged);
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(947, 969);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(135, 29);
+            this.label4.TabIndex = 208;
+            this.label4.Text = "Reamining:";
+            this.label4.Click += new System.EventHandler(this.label4_Click);
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(615, 971);
+            this.textBox2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(281, 26);
+            this.textBox2.TabIndex = 207;
+            this.textBox2.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.Location = new System.Drawing.Point(544, 968);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(68, 29);
+            this.label3.TabIndex = 206;
+            this.label3.Text = "Paid:";
+            this.label3.Click += new System.EventHandler(this.label3_Click);
+            // 
+            // txttotalprice
+            // 
+            this.txttotalprice.Location = new System.Drawing.Point(200, 972);
+            this.txttotalprice.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.txttotalprice.Name = "txttotalprice";
+            this.txttotalprice.Size = new System.Drawing.Size(281, 26);
+            this.txttotalprice.TabIndex = 205;
+            this.txttotalprice.TextChanged += new System.EventHandler(this.txttotalprice_TextChanged);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(69, 968);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(136, 29);
+            this.label2.TabIndex = 204;
+            this.label2.Text = "Total Price:";
+            this.label2.Click += new System.EventHandler(this.label2_Click);
+            // 
+            // btnsave
+            // 
+            this.btnsave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(109)))), ((int)(((byte)(148)))), ((int)(((byte)(197)))));
+            this.btnsave.FlatAppearance.BorderColor = System.Drawing.Color.Indigo;
+            this.btnsave.FlatAppearance.BorderSize = 2;
+            this.btnsave.FlatAppearance.MouseDownBackColor = System.Drawing.Color.DodgerBlue;
+            this.btnsave.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(5)))), ((int)(((byte)(51)))), ((int)(((byte)(69)))));
+            this.btnsave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnsave.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnsave.ForeColor = System.Drawing.SystemColors.ButtonFace;
+            this.btnsave.IconChar = FontAwesome.Sharp.IconChar.PlusSquare;
+            this.btnsave.IconColor = System.Drawing.Color.Gainsboro;
+            this.btnsave.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnsave.IconSize = 35;
+            this.btnsave.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnsave.Location = new System.Drawing.Point(1379, 954);
+            this.btnsave.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.btnsave.Name = "btnsave";
+            this.btnsave.Size = new System.Drawing.Size(233, 61);
+            this.btnsave.TabIndex = 200;
+            this.btnsave.Text = "Save";
+            this.btnsave.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnsave.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnsave.UseVisualStyleBackColor = false;
+            this.btnsave.Click += new System.EventHandler(this.btnsave_Click);
+            // 
+            // addbtn
+            // 
+            this.addbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(109)))), ((int)(((byte)(148)))), ((int)(((byte)(197)))));
+            this.addbtn.FlatAppearance.BorderColor = System.Drawing.Color.Indigo;
+            this.addbtn.FlatAppearance.BorderSize = 2;
+            this.addbtn.FlatAppearance.MouseDownBackColor = System.Drawing.Color.DodgerBlue;
+            this.addbtn.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(5)))), ((int)(((byte)(51)))), ((int)(((byte)(69)))));
+            this.addbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.addbtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.addbtn.ForeColor = System.Drawing.SystemColors.ButtonFace;
+            this.addbtn.IconChar = FontAwesome.Sharp.IconChar.PlusSquare;
+            this.addbtn.IconColor = System.Drawing.Color.Gainsboro;
+            this.addbtn.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.addbtn.IconSize = 35;
+            this.addbtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.addbtn.Location = new System.Drawing.Point(236, 408);
+            this.addbtn.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.addbtn.Name = "addbtn";
+            this.addbtn.Size = new System.Drawing.Size(158, 66);
+            this.addbtn.TabIndex = 199;
+            this.addbtn.Text = "Add ";
+            this.addbtn.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.addbtn.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.addbtn.UseVisualStyleBackColor = false;
+            this.addbtn.Click += new System.EventHandler(this.btnAdd_Click);
+            // 
+            // txtContact
+            // 
+            this.txtContact.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtContact.Location = new System.Drawing.Point(155, 202);
+            this.txtContact.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.txtContact.Multiline = true;
+            this.txtContact.Name = "txtContact";
+            this.txtContact.Size = new System.Drawing.Size(321, 56);
+            this.txtContact.TabIndex = 154;
+            this.txtContact.TextChanged += new System.EventHandler(this.txtContact_TextChanged);
+            // 
+            // lblBatch
+            // 
+            this.lblBatch.AutoSize = true;
+            this.lblBatch.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBatch.Location = new System.Drawing.Point(150, 44);
+            this.lblBatch.Name = "lblBatch";
+            this.lblBatch.Size = new System.Drawing.Size(186, 29);
+            this.lblBatch.TabIndex = 157;
+            this.lblBatch.Text = "Company Name";
+            this.lblBatch.Click += new System.EventHandler(this.lblBatch_Click);
+            // 
+            // lblProducts
+            // 
+            this.lblProducts.AutoSize = true;
+            this.lblProducts.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblProducts.Location = new System.Drawing.Point(150, 168);
+            this.lblProducts.Name = "lblProducts";
+            this.lblProducts.Size = new System.Drawing.Size(94, 29);
+            this.lblProducts.TabIndex = 158;
+            this.lblProducts.Text = "Contact";
+            this.lblProducts.Click += new System.EventHandler(this.lblProducts_Click);
+            // 
+            // lblQuantity
+            // 
+            this.lblQuantity.AutoSize = true;
+            this.lblQuantity.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblQuantity.Location = new System.Drawing.Point(150, 282);
+            this.lblQuantity.Name = "lblQuantity";
+            this.lblQuantity.Size = new System.Drawing.Size(102, 29);
+            this.lblQuantity.TabIndex = 159;
+            this.lblQuantity.Text = "Address";
+            this.lblQuantity.Click += new System.EventHandler(this.lblQuantity_Click);
+            // 
+            // panel2
+            // 
+            this.panel2.BackColor = System.Drawing.Color.Linen;
+            this.panel2.Controls.Add(this.editbtn);
+            this.panel2.Controls.Add(this.txtName);
+            this.panel2.Controls.Add(this.txtAddress);
+            this.panel2.Controls.Add(this.textBox3);
+            this.panel2.Controls.Add(this.label4);
+            this.panel2.Controls.Add(this.textBox2);
+            this.panel2.Controls.Add(this.label3);
+            this.panel2.Controls.Add(this.txttotalprice);
+            this.panel2.Controls.Add(this.label2);
+            this.panel2.Controls.Add(this.btnsave);
+            this.panel2.Controls.Add(this.addbtn);
+            this.panel2.Controls.Add(this.txtContact);
+            this.panel2.Controls.Add(this.lblBatch);
+            this.panel2.Controls.Add(this.lblProducts);
+            this.panel2.Controls.Add(this.lblQuantity);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel2.Location = new System.Drawing.Point(0, 105);
+            this.panel2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(650, 509);
+            this.panel2.TabIndex = 205;
+            this.panel2.Paint += new System.Windows.Forms.PaintEventHandler(this.panel2_Paint);
+            // 
+            // editbtn
+            // 
+            this.editbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(109)))), ((int)(((byte)(148)))), ((int)(((byte)(197)))));
+            this.editbtn.FlatAppearance.BorderColor = System.Drawing.Color.Indigo;
+            this.editbtn.FlatAppearance.BorderSize = 2;
+            this.editbtn.FlatAppearance.MouseDownBackColor = System.Drawing.Color.DodgerBlue;
+            this.editbtn.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(5)))), ((int)(((byte)(51)))), ((int)(((byte)(69)))));
+            this.editbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.editbtn.Font = new System.Drawing.Font("Segoe UI Semibold", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.editbtn.ForeColor = System.Drawing.SystemColors.ButtonFace;
+            this.editbtn.IconChar = FontAwesome.Sharp.IconChar.PlusSquare;
+            this.editbtn.IconColor = System.Drawing.Color.Gainsboro;
+            this.editbtn.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.editbtn.IconSize = 35;
+            this.editbtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.editbtn.Location = new System.Drawing.Point(236, 408);
+            this.editbtn.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.editbtn.Name = "editbtn";
+            this.editbtn.Size = new System.Drawing.Size(158, 66);
+            this.editbtn.TabIndex = 212;
+            this.editbtn.Text = "Edit";
+            this.editbtn.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.editbtn.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.editbtn.UseVisualStyleBackColor = false;
+            this.editbtn.Click += new System.EventHandler(this.btnEdit_Click);
+            // 
+            // txtName
+            // 
+            this.txtName.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtName.Location = new System.Drawing.Point(155, 79);
+            this.txtName.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.txtName.Multiline = true;
+            this.txtName.Name = "txtName";
+            this.txtName.Size = new System.Drawing.Size(321, 56);
+            this.txtName.TabIndex = 211;
+            this.txtName.TextChanged += new System.EventHandler(this.txtName_TextChanged);
+            // 
+            // txtAddress
+            // 
+            this.txtAddress.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtAddress.Location = new System.Drawing.Point(155, 318);
+            this.txtAddress.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.txtAddress.Multiline = true;
+            this.txtAddress.Name = "txtAddress";
+            this.txtAddress.Size = new System.Drawing.Size(321, 56);
+            this.txtAddress.TabIndex = 210;
+            this.txtAddress.TextChanged += new System.EventHandler(this.txtAddress_TextChanged);
+            // 
+            // panel1
+            // 
+            this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(109)))), ((int)(((byte)(148)))), ((int)(((byte)(197)))));
+            this.panel1.Controls.Add(this.toplbl);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel1.Location = new System.Drawing.Point(0, 0);
+            this.panel1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(650, 105);
+            this.panel1.TabIndex = 204;
+            this.panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.panel1_Paint);
+            // 
+            // toplbl
+            // 
+            this.toplbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
+            this.toplbl.AutoSize = true;
+            this.toplbl.Font = new System.Drawing.Font("Microsoft Sans Serif", 19.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.toplbl.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.toplbl.Location = new System.Drawing.Point(182, 29);
+            this.toplbl.Name = "toplbl";
+            this.toplbl.Size = new System.Drawing.Size(247, 46);
+            this.toplbl.TabIndex = 6;
+            this.toplbl.Text = " Add Details";
+            this.toplbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toplbl.Click += new System.EventHandler(this.toplbl_Click);
+            // 
+            // AddCompany
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(650, 614);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel1);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.Name = "AddCompany";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "AddCompany";
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            this.ResumeLayout(false);
+
+        }
+
+        #endregion
+        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox txttotalprice;
+        private System.Windows.Forms.Label label2;
+        private FontAwesome.Sharp.IconButton btnsave;
+        private FontAwesome.Sharp.IconButton addbtn;
+        private System.Windows.Forms.TextBox txtContact;
+        private System.Windows.Forms.Label lblBatch;
+        private System.Windows.Forms.Label lblProducts;
+        private System.Windows.Forms.Label lblQuantity;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Label toplbl;
+        private System.Windows.Forms.TextBox txtName;
+        private System.Windows.Forms.TextBox txtAddress;
+        private FontAwesome.Sharp.IconButton editbtn;
+    }
+}
