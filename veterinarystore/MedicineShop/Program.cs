@@ -1,4 +1,7 @@
-﻿using fertilizesop.UI;
+﻿//password = Aimanrehman123 ?; database = medicine;
+
+
+using fertilizesop.UI;
 using MedicineShop.BL;
 using MedicineShop.BL.Bl;
 using MedicineShop.DL;

@@ -1,1 +1,205 @@
-<p>dashboard works!</p>
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+  <div class="welcome-text">
+    <h2>Welcome back! 👋</h2>
+    <p>Here's what's happening with your pharmacy today.</p>
+  </div>
+  <button class="new-sale-btn" (click)="goToSales()">
+    <span class="material-symbols-outlined">add_shopping_cart</span>
+    New Sale
+  </button>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card" *ngIf="!loading.stats">
+    <div class="stat-icon medicines">
+      <span class="material-symbols-outlined">medication</span>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Total Medicines</span>
+      <span class="stat-value">{{ totalMedicines }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card clickable" *ngIf="!loading.stats" (click)="goToLowStock()">
+    <div class="stat-icon warning">
+      <span class="material-symbols-outlined">warning</span>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Low Stock Items</span>
+      <span class="stat-value" [class.text-warning]="lowStockCount > 0">{{ lowStockCount }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card" *ngIf="!loading.stats">
+    <div class="stat-icon sales">
+      <span class="material-symbols-outlined">payments</span>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Today's Sales</span>
+      <span class="stat-value">{{ formatCurrency(todaySales) }}</span>
+      <span class="stat-sub">{{ todayTransactions }} transactions</span>
+    </div>
+  </div>
+
+  <div class="stat-card clickable" *ngIf="!loading.stats" (click)="goToExpiring()">
+    <div class="stat-icon expiring">
+      <span class="material-symbols-outlined">event_busy</span>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Expiring Soon</span>
+      <span class="stat-value" [class.text-danger]="expiringCount > 0">{{ expiringCount }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card" *ngIf="!loading.stats">
+    <div class="stat-icon customers">
+      <span class="material-symbols-outlined">people</span>
+    </div>
+    <div class="stat-details">
+      <span class="stat-label">Total Customers</span>
+      <span class="stat-value">{{ totalCustomers }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="dashboard-grid">
+  <!-- Recent Sales -->
+  <div class="grid-card recent-sales">
+    <div class="card-header">
+      <h3>Recent Sales</h3>
+      <button class="view-all" (click)="goToSales()">View All</button>
+    </div>
+    
+    <div class="table-container" *ngIf="!loading.recentSales; else loadingTemplate">
+      <table *ngIf="recentSales.length > 0; else noDataTemplate">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sale of recentSales.slice(0, 5)">
+            <td>#{{ sale.sale_id }}</td>
+            <td>{{ sale.customer_name || 'Walk-in' }}</td>
+            <td>{{ sale.sale_date | date:'short' }}</td>
+            <td>{{ formatCurrency(sale.total_amount) }}</td>
+            <td>
+              <span class="badge" [class.badge-success]="sale.paid_amount >= sale.total_amount"
+                    [class.badge-warning]="sale.paid_amount < sale.total_amount">
+                {{ sale.paid_amount >= sale.total_amount ? 'Paid' : 'Partial' }}
+              </span>
+            </td>
+            <td>
+              <button class="icon-btn" (click)="viewSale(sale.sale_id)">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Low Stock Alerts -->
+  <div class="grid-card low-stock">
+    <div class="card-header">
+      <h3>Low Stock Alerts</h3>
+      <button class="view-all" (click)="goToLowStock()">View All</button>
+    </div>
+    
+    <div class="alert-list" *ngIf="!loading.lowStock; else loadingTemplate">
+      <div *ngFor="let item of lowStockItems.slice(0, 5)" 
+           class="alert-item" 
+           [class]="getStockStatusClass(item.stock_status)">
+        <div class="alert-info">
+          <span class="alert-title">{{ item.name }}</span>
+          <span class="alert-desc">{{ item.company_name }}</span>
+        </div>
+        <div class="alert-value">
+          <span class="stock-count">{{ item.current_stock }}</span>
+          <span class="stock-threshold">/ {{ item.minimum_threshold }}</span>
+        </div>
+      </div>
+      <div *ngIf="lowStockItems.length === 0" class="no-data">
+        <span class="material-symbols-outlined">check_circle</span>
+        <p>No low stock items</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expiring Soon -->
+  <div class="grid-card expiring">
+    <div class="card-header">
+      <h3>Expiring Soon</h3>
+      <button class="view-all" (click)="goToExpiring()">View All</button>
+    </div>
+    
+    <div class="alert-list" *ngIf="!loading.expiring; else loadingTemplate">
+      <div *ngFor="let item of expiringItems.slice(0, 5)" class="alert-item expiring-item">
+        <div class="alert-info">
+          <span class="alert-title">{{ item.name }}</span>
+          <span class="alert-desc">{{ item.company_name }}</span>
+        </div>
+        <div class="alert-value">
+          <span class="expiry-date">{{ item.expiry_date | date }}</span>
+          <span class="days-left" [class.critical]="item.days_to_expiry <= 30">
+            {{ item.days_to_expiry }} days
+          </span>
+        </div>
+      </div>
+      <div *ngIf="expiringItems.length === 0" class="no-data">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <p>No items expiring soon</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid-card quick-actions">
+    <div class="card-header">
+      <h3>Quick Actions</h3>
+    </div>
+    
+    <div class="actions-grid">
+      <button class="action-btn" (click)="goToSales()">
+        <span class="material-symbols-outlined">add_shopping_cart</span>
+        <span>New Sale</span>
+      </button>
+      <button class="action-btn" (click)="goToMedicines()">
+        <span class="material-symbols-outlined">add</span>
+        <span>Add Medicine</span>
+      </button>
+      <button class="action-btn" (click)="goToCustomers()">
+        <span class="material-symbols-outlined">person_add</span>
+        <span>Add Customer</span>
+      </button>
+      <button class="action-btn" (click)="goToReports()">
+        <span class="material-symbols-outlined">receipt</span>
+        <span>Sales Report</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #loadingTemplate>
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate>
+  <div class="no-data">
+    <span class="material-symbols-outlined">info</span>
+    <p>No data available</p>
+  </div>
+</ng-template>

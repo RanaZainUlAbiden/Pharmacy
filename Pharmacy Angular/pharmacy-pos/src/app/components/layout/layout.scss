@@ -1,0 +1,371 @@
+// Variables
+$sidebar-width: 260px;
+$sidebar-collapsed-width: 80px;
+$primary-color: #667eea;
+$secondary-color: #764ba2;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$text-dark: #1f2937;
+$text-light: #6b7280;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$sidebar-bg: #ffffff;
+$card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+* {
+  box-sizing: border-box;
+}
+
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-light;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+// Sidebar
+.sidebar {
+  width: $sidebar-width;
+  background: $sidebar-bg;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  position: fixed;
+  height: 100vh;
+  z-index: 100;
+  overflow: hidden;
+
+  .sidebar-header {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid $border-color;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+
+    &:hover {
+      background: $bg-light;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+
+      span {
+        font-size: 32px;
+        color: $primary-color;
+      }
+
+      .logo-text {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: $text-dark;
+        white-space: nowrap;
+      }
+    }
+    
+    .toggle-indicator {
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+
+      span {
+        color: $text-light;
+      }
+    }
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      margin: 4px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+
+      .nav-icon {
+        font-size: 24px;
+        color: $text-light;
+        margin-right: 12px;
+      }
+
+      .nav-label {
+        color: $text-dark;
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+
+      .tooltip {
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        background: $text-dark;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        margin-left: 8px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 1000;
+      }
+
+      &:hover {
+        background: $bg-light;
+
+        .nav-icon {
+          color: $primary-color;
+        }
+
+        .tooltip {
+          opacity: 1;
+        }
+      }
+
+      &.active {
+        background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+
+        .nav-icon, .nav-label {
+          color: white;
+        }
+      }
+    }
+  }
+
+  .sidebar-footer {
+    padding: 1.5rem;
+    border-top: 1px solid $border-color;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: $sidebar-bg;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+
+      span {
+        font-size: 32px;
+        color: $primary-color;
+      }
+
+      .user-details {
+        .user-name {
+          display: block;
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: $text-dark;
+          white-space: nowrap;
+        }
+
+        .user-role {
+          display: block;
+          font-size: 0.8rem;
+          color: $text-light;
+        }
+      }
+    }
+
+    .logout-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: $text-light;
+      padding: 8px;
+      border-radius: 8px;
+      position: relative;
+
+      &:hover {
+        background: $bg-light;
+        color: $danger-color;
+      }
+    }
+  }
+}
+
+// Collapsed sidebar
+.sidebar-collapsed {
+  .sidebar {
+    width: $sidebar-collapsed-width;
+    
+    .sidebar-header {
+      .logo-text {
+        display: none;
+      }
+    }
+
+    .sidebar-nav {
+      .nav-item {
+        padding: 0.75rem;
+        justify-content: center;
+
+        .nav-icon {
+          margin-right: 0;
+        }
+
+        .nav-label {
+          display: none;
+        }
+      }
+      
+      overflow-y: hidden;
+      
+      &:hover {
+        overflow-y: auto;
+      }
+    }
+
+    .sidebar-footer {
+      .user-details {
+        display: none;
+      }
+
+      .logout-btn {
+        margin: 0 auto;
+      }
+    }
+  }
+
+  .main-content {
+    margin-left: $sidebar-collapsed-width;
+  }
+}
+
+// Main Content
+.main-content {
+  flex: 1;
+  margin-left: $sidebar-width;
+  transition: margin-left 0.3s ease;
+}
+
+// Top Bar
+.top-bar {
+  background: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: $card-shadow;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .menu-icon {
+      font-size: 24px;
+      cursor: pointer;
+      color: $text-light;
+      display: none;
+
+      @media (max-width: 768px) {
+        display: block;
+      }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: $text-dark;
+    }
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    span {
+      font-size: 24px;
+      color: $text-light;
+      cursor: pointer;
+
+      &:hover {
+        color: $primary-color;
+      }
+    }
+
+    .date-badge {
+      background: $bg-light;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: $text-dark;
+      font-weight: 500;
+    }
+  }
+}
+
+// Content Area - This is where child components will render
+.content-area {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: 1000;
+  }
+
+  .sidebar-collapsed .sidebar {
+    transform: translateX(0);
+    width: $sidebar-width;
+  }
+
+  .main-content, .sidebar-collapsed .main-content {
+    margin-left: 0;
+  }
+
+  .top-bar .menu-icon {
+    display: block !important;
+  }
+
+  .top-bar-right .date-badge {
+    display: none;
+  }
+}

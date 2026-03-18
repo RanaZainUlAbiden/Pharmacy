@@ -1,0 +1,62 @@
+<div class="dashboard" [class.sidebar-collapsed]="sidebarCollapsed">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header" (click)="toggleSidebar()">
+      <div class="logo">
+        <span class="material-symbols-outlined">local_pharmacy</span>
+        <span class="logo-text" *ngIf="!sidebarCollapsed">Pharmacy POS</span>
+      </div>
+      <div class="toggle-indicator">
+        <span class="material-symbols-outlined">
+          {{ sidebarCollapsed ? 'chevron_right' : 'chevron_left' }}
+        </span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-item" *ngFor="let item of menuItems" 
+             [class.active]="item.active"
+             (click)="navigateTo(item.route)">
+          <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+          <span class="tooltip" *ngIf="sidebarCollapsed">{{ item.label }}</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <span class="material-symbols-outlined">account_circle</span>
+        <div class="user-details" *ngIf="!sidebarCollapsed">
+          <span class="user-name">{{ currentUser?.full_name || currentUser?.username || 'Admin' }}</span>
+          <span class="user-role">Administrator</span>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <span class="material-symbols-outlined menu-icon" (click)="toggleSidebar()">menu</span>
+        <h1>{{ getPageTitle() }}</h1>
+      </div>
+      <div class="top-bar-right">
+        <span class="material-symbols-outlined">notifications</span>
+        <span class="material-symbols-outlined">dark_mode</span>
+        <div class="date-badge">{{ currentDate | date:'EEEE, MMM d, y' }}</div>
+      </div>
+    </header>
+
+    <!-- Router Outlet - Child components load here -->
+    <div class="content-area">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

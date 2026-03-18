@@ -1,0 +1,242 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="header-left">
+    <button class="back-btn" (click)="goBack()" *ngIf="viewMode !== 'list'">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1>
+      <span class="material-symbols-outlined">people</span>
+      <span *ngIf="viewMode === 'list'">Customers</span>
+      <span *ngIf="viewMode === 'add'">Add New Customer</span>
+      <span *ngIf="viewMode === 'edit'">Edit Customer</span>
+      <span *ngIf="viewMode === 'details'">Customer Details</span>
+    </h1>
+  </div>
+  
+  <div class="header-right" *ngIf="viewMode === 'list'">
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input 
+        type="text" 
+        placeholder="Search customers..." 
+        [(ngModel)]="searchTerm"
+      >
+    </div>
+    <button class="btn-primary" (click)="showAddForm()">
+      <span class="material-symbols-outlined">add</span>
+      New Customer
+    </button>
+  </div>
+</div>
+
+<!-- List View -->
+<div class="content-card" *ngIf="viewMode === 'list'">
+  <div class="table-container" *ngIf="!loading.customers; else loadingTemplate">
+    <table *ngIf="filteredCustomers.length > 0; else noDataTemplate">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Total Sales</th>
+          <th>Due Amount</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let customer of filteredCustomers">
+          <td class="customer-name">
+            <span class="material-symbols-outlined">account_circle</span>
+            {{ customer.full_name }}
+          </td>
+          <td>{{ customer.phone || '—' }}</td>
+          <td class="address-cell">{{ customer.address || '—' }}</td>
+          <td class="amount">—</td>
+          <td class="amount due">—</td>
+          <td class="actions">
+            <button class="icon-btn" (click)="showCustomerDetails(customer)" title="View Details">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+            <button class="icon-btn" (click)="showEditForm(customer)" title="Edit">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="icon-btn delete" (click)="deleteCustomer(customer.customer_id)" title="Delete">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add/Edit Form -->
+<div class="content-card" *ngIf="viewMode === 'add' || viewMode === 'edit'">
+  <form (ngSubmit)="viewMode === 'add' ? addCustomer() : updateCustomer()" class="customer-form">
+    <div class="form-group">
+      <label for="full_name">
+        <span class="material-symbols-outlined">badge</span>
+        Full Name *
+      </label>
+      <input 
+        type="text" 
+        id="full_name"
+        class="form-control"
+        [(ngModel)]="customerForm.full_name"
+        name="full_name"
+        required
+        placeholder="Enter customer full name"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="phone">
+        <span class="material-symbols-outlined">call</span>
+        Phone Number
+      </label>
+      <input 
+        type="tel" 
+        id="phone"
+        class="form-control"
+        [(ngModel)]="customerForm.phone"
+        name="phone"
+        placeholder="03XX-XXXXXXX"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="address">
+        <span class="material-symbols-outlined">location_on</span>
+        Address
+      </label>
+      <textarea 
+        id="address"
+        class="form-control"
+        [(ngModel)]="customerForm.address"
+        name="address"
+        rows="3"
+        placeholder="Enter customer address"
+      ></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelForm()">
+        Cancel
+      </button>
+      <button type="submit" class="btn-primary">
+        <span class="material-symbols-outlined">
+          {{ viewMode === 'add' ? 'save' : 'update' }}
+        </span>
+        {{ viewMode === 'add' ? 'Save Customer' : 'Update Customer' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Customer Details View -->
+<div class="content-card" *ngIf="viewMode === 'details' && selectedCustomer">
+  <!-- Customer Info Header -->
+  <div class="customer-profile">
+    <div class="profile-avatar">
+      <span class="material-symbols-outlined">account_circle</span>
+    </div>
+    <div class="profile-info">
+      <h2>{{ selectedCustomer.full_name }}</h2>
+      <div class="info-row">
+        <span class="material-symbols-outlined">call</span>
+        <span>{{ selectedCustomer.phone || 'No phone number' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="material-symbols-outlined">location_on</span>
+        <span>{{ selectedCustomer.address || 'No address' }}</span>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="stat-item">
+        <span class="stat-label">Total Due</span>
+        <span class="stat-value due">{{ formatCurrency(totalDue) }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Sales</span>
+        <span class="stat-value">{{ customerSales.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active">Sales History</button>
+    <button class="tab-btn">Payment History</button>
+  </div>
+
+  <!-- Sales History -->
+  <div class="table-container" *ngIf="!loading.sales; else loadingSmallTemplate">
+    <table *ngIf="customerSales.length > 0; else noSalesTemplate">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Invoice #</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Due</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sale of customerSales">
+          <td>{{ formatDate(sale.sale_date) }}</td>
+          <td>#{{ sale.sale_id }}</td>
+          <td>{{ sale.item_count || 0 }}</td>
+          <td class="amount">{{ formatCurrency(sale.total_amount) }}</td>
+          <td class="amount">{{ formatCurrency(sale.paid_amount || 0) }}</td>
+          <td class="amount due">{{ formatCurrency(sale.total_amount - (sale.paid_amount || 0)) }}</td>
+          <td>
+            <span class="badge" [class.badge-success]="sale.paid_amount >= sale.total_amount"
+                  [class.badge-warning]="sale.paid_amount < sale.total_amount">
+              {{ sale.paid_amount >= sale.total_amount ? 'Paid' : 'Partial' }}
+            </span>
+          </td>
+          <td>
+            <button class="icon-btn" (click)="viewSale(sale.sale_id)">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #loadingTemplate>
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading customers...</p>
+  </div>
+</ng-template>
+
+<ng-template #loadingSmallTemplate>
+  <div class="loading-small">
+    <div class="spinner-small"></div>
+    <p>Loading...</p>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate>
+  <div class="no-data">
+    <span class="material-symbols-outlined">people</span>
+    <p>No customers found</p>
+    <button class="btn-primary" (click)="showAddForm()">
+      Add Your First Customer
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #noSalesTemplate>
+  <div class="no-data-small">
+    <span class="material-symbols-outlined">shopping_cart</span>
+    <p>No sales history for this customer</p>
+  </div>
+</ng-template>

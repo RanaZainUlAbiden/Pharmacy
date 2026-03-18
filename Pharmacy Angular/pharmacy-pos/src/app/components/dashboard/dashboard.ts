@@ -1,153 +1,153 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { DatabaseService } from '../../services/database.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="dashboard">
-      <nav class="navbar">
-        <div class="nav-brand">
-          <span class="material-symbols-outlined">local_pharmacy</span>
-          <h2>Pharmacy POS</h2>
-        </div>
-        
-        <div class="nav-user">
-          <span class="material-symbols-outlined">account_circle</span>
-          <span>{{ currentUser?.username || 'Admin' }}</span>
-          <button class="logout-btn" (click)="logout()">
-            <span class="material-symbols-outlined">logout</span>
-          </button>
-        </div>
-      </nav>
-
-      <div class="container">
-        <h1>Welcome to Dashboard</h1>
-        <p>Your pharmacy management system is ready!</p>
-        
-        <div class="stats-grid">
-          <div class="stat-card">
-            <h3>Total Medicines</h3>
-            <p class="stat-value">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Low Stock</h3>
-            <p class="stat-value">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Today's Sales</h3>
-            <p class="stat-value">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Expiring Soon</h3>
-            <p class="stat-value">0</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1');
-
-    .dashboard {
-      min-height: 100vh;
-      background: #f5f5f5;
-    }
-
-    .navbar {
-      background: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .nav-brand span {
-      font-size: 32px;
-      color: #667eea;
-    }
-
-    .nav-brand h2 {
-      margin: 0;
-      color: #333;
-    }
-
-    .nav-user {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .nav-user span {
-      color: #666;
-    }
-
-    .logout-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #666;
-      display: flex;
-      align-items: center;
-    }
-
-    .logout-btn:hover {
-      color: #dc3545;
-    }
-
-    .container {
-      padding: 2rem;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .stat-card h3 {
-      margin: 0 0 10px;
-      color: #666;
-      font-size: 14px;
-    }
-
-    .stat-value {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
-      color: #333;
-    }
-  `]
+  templateUrl: './dashboard.html',
+  styleUrls: ['./dashboard.scss']
 })
-export class DashboardComponent {
-  currentUser: any;
+export class DashboardComponent implements OnInit {
+  // Stats
+  totalMedicines: number = 0;
+  lowStockCount: number = 0;
+  todaySales: number = 0;
+  expiringCount: number = 0;
+  totalCustomers: number = 0;
+  todayTransactions: number = 0;
+  
+  // Data
+  recentSales: any[] = [];
+  lowStockItems: any[] = [];
+  expiringItems: any[] = [];
+  
+  // Loading states (start false because resolver loads data)
+  loading = {
+    stats: false,
+    recentSales: false,
+    lowStock: false,
+    expiring: false
+  };
 
-  constructor(private router: Router) {
-    const user = localStorage.getItem('currentUser');
-    if (user) {
-      this.currentUser = JSON.parse(user);
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private db: DatabaseService
+  ) {}
+
+  ngOnInit() {
+    // Get data from resolver
+    this.route.data.subscribe((data: any) => {
+      console.log('📦 Dashboard received resolver data:', data);
+      
+      if (data && data.dashboardData) {
+        const dashboardData = data.dashboardData;
+        
+        // Update all stats
+        this.totalMedicines = dashboardData.totalMedicines || 0;
+        this.lowStockCount = dashboardData.lowStockCount || 0;
+        this.todaySales = dashboardData.todaySales || 0;
+        this.todayTransactions = dashboardData.todayTransactions || 0;
+        this.expiringCount = dashboardData.expiringCount || 0;
+        this.totalCustomers = dashboardData.totalCustomers || 0;
+        
+        // Update data
+        this.recentSales = dashboardData.recentSales || [];
+        this.lowStockItems = dashboardData.lowStockItems || [];
+        this.expiringItems = dashboardData.expiringItems || [];
+        
+        console.log('✅ Dashboard updated with resolver data');
+      }
+    });
+  }
+
+  // Manual reload method (if needed)
+  async reloadDashboard() {
+    this.loading.stats = true;
+    this.loading.recentSales = true;
+    this.loading.lowStock = true;
+    this.loading.expiring = true;
+    
+    try {
+      const [medicines, lowStock, dailySales, expiring, customers, recentSales] = await Promise.all([
+        this.db.getAllMedicines(),
+        this.db.getLowStock(),
+        this.db.getDailySales(),
+        this.db.getExpiringItems(30),
+        this.db.getAllCustomers(),
+        this.db.getSalesHistory(5)
+      ]);
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = dailySales.find((d: any) => d.sale_day === today);
+
+      this.totalMedicines = medicines.length;
+      this.lowStockCount = lowStock.length;
+      this.todaySales = todayData?.total_sales || 0;
+      this.todayTransactions = todayData?.total_bills || 0;
+      this.expiringCount = expiring.length;
+      this.totalCustomers = customers.length;
+      this.recentSales = recentSales || [];
+      this.lowStockItems = lowStock.slice(0, 5);
+      this.expiringItems = expiring.slice(0, 5);
+      
+      console.log('✅ Dashboard manually reloaded');
+    } catch (error) {
+      console.error('Error reloading dashboard:', error);
+    } finally {
+      this.loading.stats = false;
+      this.loading.recentSales = false;
+      this.loading.lowStock = false;
+      this.loading.expiring = false;
     }
   }
 
-  logout() {
-    localStorage.removeItem('currentUser');
-    this.router.navigate(['/login']);
+  // Navigation methods
+  goToSales() {
+    this.router.navigate(['/sales']);
+  }
+
+  goToMedicines() {
+    this.router.navigate(['/medicines']);
+  }
+
+  goToCustomers() {
+    this.router.navigate(['/customers']);
+  }
+
+  goToReports() {
+    this.router.navigate(['/reports']);
+  }
+
+  goToLowStock() {
+    this.router.navigate(['/medicines'], { queryParams: { filter: 'lowstock' } });
+  }
+
+  goToExpiring() {
+    this.router.navigate(['/medicines'], { queryParams: { filter: 'expiring' } });
+  }
+
+  viewSale(saleId: number) {
+    this.router.navigate(['/sales', saleId]);
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-PK', {
+      style: 'currency',
+      currency: 'PKR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  }
+
+  getStockStatusClass(status: string): string {
+    switch(status) {
+      case 'OUT_OF_STOCK': return 'status-critical';
+      case 'CRITICAL': return 'status-critical';
+      case 'LOW': return 'status-warning';
+      default: return 'status-good';
+    }
   }
 }
