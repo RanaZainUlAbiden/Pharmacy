@@ -1,0 +1,351 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="header-left">
+    <button class="back-btn" (click)="goBack()" *ngIf="viewMode !== 'list'">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1>
+      <span class="material-symbols-outlined">medication</span>
+      <span *ngIf="viewMode === 'list'">Medicines</span>
+      <span *ngIf="viewMode === 'add'">Add New Medicine</span>
+      <span *ngIf="viewMode === 'edit'">Edit Medicine</span>
+      <span *ngIf="viewMode === 'details'">Medicine Details</span>
+    </h1>
+  </div>
+
+  <div class="header-right" *ngIf="viewMode === 'list'">
+    <div class="filter-tabs">
+      <button class="filter-tab" [class.active]="activeFilter === 'all'" (click)="setFilter('all')">All</button>
+      <button class="filter-tab warning" [class.active]="activeFilter === 'lowstock'" (click)="setFilter('lowstock')">
+        <span class="material-symbols-outlined">warning</span>
+        Low Stock
+      </button>
+      <button class="filter-tab danger" [class.active]="activeFilter === 'expiring'" (click)="setFilter('expiring')">
+        <span class="material-symbols-outlined">event_busy</span>
+        Expiring
+      </button>
+    </div>
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input
+        type="text"
+        placeholder="Search medicines..."
+        [(ngModel)]="searchTerm"
+      >
+    </div>
+    <button class="btn-primary" (click)="showAddForm()">
+      <span class="material-symbols-outlined">add</span>
+      New Medicine
+    </button>
+  </div>
+</div>
+
+<!-- List View -->
+<div class="content-card" *ngIf="viewMode === 'list'">
+  <div class="table-container" *ngIf="!loading.medicines; else loadingTemplate">
+    <table *ngIf="filteredMedicines.length > 0; else noDataTemplate">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Company</th>
+          <th>Packing</th>
+          <th>Sale Price</th>
+          <th>Stock</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let medicine of filteredMedicines">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ medicine.name }}
+          </td>
+          <td>{{ medicine.category_name || '—' }}</td>
+          <td>{{ medicine.company_name || '—' }}</td>
+          <td>{{ medicine.packing_name || '—' }}</td>
+          <td class="amount">{{ formatCurrency(medicine.sale_price) }}</td>
+          <td>
+            <span class="stock-badge" [class]="getStockBadgeClass(medicine)">
+              {{ medicine.current_stock ?? 0 }}
+            </span>
+          </td>
+          <td>
+            <span class="status-chip" [class]="getStatusClass(medicine.stock_status)">
+              {{ getStatusLabel(medicine.stock_status) }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="icon-btn" (click)="showDetails(medicine)" title="View Details">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+            <button class="icon-btn" (click)="showEditForm(medicine)" title="Edit">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="icon-btn delete" (click)="deleteMedicine(medicine.product_id)" title="Delete">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add / Edit Form -->
+<div class="content-card" *ngIf="viewMode === 'add' || viewMode === 'edit'">
+  <form (ngSubmit)="viewMode === 'add' ? addMedicine() : updateMedicine()" class="medicine-form">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="name">
+          <span class="material-symbols-outlined">medication</span>
+          Medicine Name *
+        </label>
+        <input
+          type="text"
+          id="name"
+          class="form-control"
+          [(ngModel)]="medicineForm.name"
+          name="name"
+          required
+          placeholder="Enter medicine name"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="sale_price">
+          <span class="material-symbols-outlined">payments</span>
+          Sale Price (PKR) *
+        </label>
+        <input
+          type="number"
+          id="sale_price"
+          class="form-control"
+          [(ngModel)]="medicineForm.sale_price"
+          name="sale_price"
+          required
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+        >
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="company_id">
+          <span class="material-symbols-outlined">business</span>
+          Company *
+        </label>
+        <select
+          id="company_id"
+          class="form-control"
+          [(ngModel)]="medicineForm.company_id"
+          name="company_id"
+          required
+        >
+          <option value="">Select company...</option>
+          <option *ngFor="let c of companies" [value]="c.company_id">{{ c.company_name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="category_id">
+          <span class="material-symbols-outlined">category</span>
+          Category *
+        </label>
+        <select
+          id="category_id"
+          class="form-control"
+          [(ngModel)]="medicineForm.category_id"
+          name="category_id"
+          required
+        >
+          <option value="">Select category...</option>
+          <option *ngFor="let cat of categories" [value]="cat.category_id">{{ cat.category_name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="packing_id">
+          <span class="material-symbols-outlined">inventory_2</span>
+          Packing *
+        </label>
+        <select
+          id="packing_id"
+          class="form-control"
+          [(ngModel)]="medicineForm.packing_id"
+          name="packing_id"
+          required
+        >
+          <option value="">Select packing...</option>
+          <option *ngFor="let p of packings" [value]="p.packing_id">{{ p.packing_name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="minimum_threshold">
+          <span class="material-symbols-outlined">warning</span>
+          Minimum Threshold
+        </label>
+        <input
+          type="number"
+          id="minimum_threshold"
+          class="form-control"
+          [(ngModel)]="medicineForm.minimum_threshold"
+          name="minimum_threshold"
+          min="0"
+          placeholder="e.g. 10"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">
+        <span class="material-symbols-outlined">description</span>
+        Description
+      </label>
+      <textarea
+        id="description"
+        class="form-control"
+        [(ngModel)]="medicineForm.description"
+        name="description"
+        rows="3"
+        placeholder="Optional notes about this medicine"
+      ></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+      <button type="submit" class="btn-primary">
+        <span class="material-symbols-outlined">{{ viewMode === 'add' ? 'save' : 'update' }}</span>
+        {{ viewMode === 'add' ? 'Save Medicine' : 'Update Medicine' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Details View -->
+<div class="content-card" *ngIf="viewMode === 'details' && selectedMedicine">
+
+  <!-- Medicine Profile Header -->
+  <div class="medicine-profile">
+    <div class="profile-avatar">
+      <span class="material-symbols-outlined">medication</span>
+    </div>
+    <div class="profile-info">
+      <h2>{{ selectedMedicine.name }}</h2>
+      <div class="info-row">
+        <span class="material-symbols-outlined">business</span>
+        <span>{{ selectedMedicine.company_name || 'N/A' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="material-symbols-outlined">category</span>
+        <span>{{ selectedMedicine.category_name || 'N/A' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="material-symbols-outlined">inventory_2</span>
+        <span>{{ selectedMedicine.packing_name || 'N/A' }}</span>
+      </div>
+      <div class="info-row" *ngIf="selectedMedicine.description">
+        <span class="material-symbols-outlined">description</span>
+        <span>{{ selectedMedicine.description }}</span>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="stat-item">
+        <span class="stat-label">Sale Price</span>
+        <span class="stat-value">{{ formatCurrency(selectedMedicine.sale_price) }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Stock</span>
+        <span class="stat-value" [class.danger]="(selectedMedicine.current_stock ?? 0) === 0">
+          {{ selectedMedicine.current_stock ?? 0 }}
+        </span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Min. Threshold</span>
+        <span class="stat-value">{{ selectedMedicine.minimum_threshold }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch / Stock Info -->
+  <div class="section-title">
+    <span class="material-symbols-outlined">inventory</span>
+    Stock Batches
+  </div>
+
+  <div class="table-container" *ngIf="!loading.batches; else loadingSmallTemplate">
+    <table *ngIf="medicineBatches.length > 0; else noBatchTemplate">
+      <thead>
+        <tr>
+          <th>Batch</th>
+          <th>Purchase Date</th>
+          <th>Expiry Date</th>
+          <th>Purchase Price</th>
+          <th>Received</th>
+          <th>Remaining</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let batch of medicineBatches">
+          <td>#{{ batch.purchase_batch_id }}</td>
+          <td>{{ formatDate(batch.purchase_date) }}</td>
+          <td>
+            <span [class.text-danger]="isExpiringSoon(batch.expiry_date)">
+              {{ formatDate(batch.expiry_date) }}
+            </span>
+          </td>
+          <td class="amount">{{ formatCurrency(batch.purchase_price) }}</td>
+          <td>{{ batch.quantity_received }}</td>
+          <td>
+            <span class="stock-badge" [class]="getRemainingClass(batch.quantity_remaining)">
+              {{ batch.quantity_remaining }}
+            </span>
+          </td>
+          <td>
+            <span class="status-chip" [class]="getBatchStatusClass(batch)">
+              {{ getBatchStatusLabel(batch) }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #loadingTemplate>
+  <div class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading medicines...</p>
+  </div>
+</ng-template>
+
+<ng-template #loadingSmallTemplate>
+  <div class="loading-small">
+    <div class="spinner-small"></div>
+    <p>Loading...</p>
+  </div>
+</ng-template>
+
+<ng-template #noDataTemplate>
+  <div class="no-data">
+    <span class="material-symbols-outlined">medication</span>
+    <p>No medicines found</p>
+    <button class="btn-primary" (click)="showAddForm()">Add Your First Medicine</button>
+  </div>
+</ng-template>
+
+<ng-template #noBatchTemplate>
+  <div class="no-data-small">
+    <span class="material-symbols-outlined">inventory</span>
+    <p>No stock batches found for this medicine</p>
+  </div>
+</ng-template>

@@ -1,0 +1,612 @@
+// ── Variables (same as rest of the app) ──────────────────────────────────────
+$primary-color: #667eea;
+$secondary-color: #764ba2;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$text-dark: #1f2937;
+$text-light: #6b7280;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+// ── Page Header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .back-btn {
+      background: white;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      padding: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+
+      &:hover {
+        background: $bg-light;
+        color: $primary-color;
+      }
+    }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+      font-size: 1.8rem;
+      color: $text-dark;
+
+      span:first-child {
+        font-size: 32px;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+// ── Filter Tabs ───────────────────────────────────────────────────────────────
+.filter-tabs {
+  display: flex;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .filter-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $text-light;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    span {
+      font-size: 16px;
+    }
+
+    &:not(:last-child) {
+      border-right: 1px solid $border-color;
+    }
+
+    &:hover {
+      background: $bg-light;
+      color: $text-dark;
+    }
+
+    &.active {
+      background: $primary-color;
+      color: white;
+    }
+
+    &.warning.active {
+      background: $warning-color;
+    }
+
+    &.danger.active {
+      background: $danger-color;
+    }
+  }
+}
+
+// ── Search Box ────────────────────────────────────────────────────────────────
+.search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  width: 280px;
+
+  span {
+    color: $text-light;
+    margin-right: 0.5rem;
+  }
+
+  input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 0.95rem;
+
+    &::placeholder {
+      color: $text-light;
+    }
+  }
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn-primary {
+  background: linear-gradient(135deg, $primary-color, $secondary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+  }
+
+  span {
+    font-size: 20px;
+  }
+}
+
+.btn-secondary {
+  background: white;
+  color: $text-dark;
+  border: 1px solid $border-color;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: $bg-light;
+  }
+}
+
+// ── Content Card ──────────────────────────────────────────────────────────────
+.content-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: $card-shadow;
+  margin-bottom: 1.5rem;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+.table-container {
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid $border-color;
+    }
+
+    td {
+      padding: 1rem;
+      font-size: 0.95rem;
+      color: $text-dark;
+      border-bottom: 1px solid $border-color;
+
+      &.medicine-name {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+
+        span {
+          color: $primary-color;
+        }
+      }
+
+      &.amount {
+        font-weight: 500;
+      }
+
+      &.actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background: $bg-light;
+    }
+  }
+}
+
+// ── Icon Buttons ──────────────────────────────────────────────────────────────
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: $text-light;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: $bg-light;
+    color: $primary-color;
+  }
+
+  &.delete:hover {
+    color: $danger-color;
+    background: rgba($danger-color, 0.08);
+  }
+}
+
+// ── Stock Badges ──────────────────────────────────────────────────────────────
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  &.badge-ok {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.badge-low {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.badge-critical {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.badge-out {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+}
+
+// ── Status Chips ──────────────────────────────────────────────────────────────
+.status-chip {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  &.chip-ok {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.chip-low {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.chip-critical {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.chip-out {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+}
+
+// ── Medicine Form ─────────────────────────────────────────────────────────────
+.medicine-form {
+  max-width: 800px;
+  margin: 0 auto;
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: $text-dark;
+      font-weight: 500;
+
+      span {
+        color: $primary-color;
+        font-size: 18px;
+      }
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: $text-dark;
+      background: white;
+      transition: all 0.3s;
+      box-sizing: border-box;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+
+      &::placeholder {
+        color: $text-light;
+      }
+    }
+
+    select.form-control {
+      cursor: pointer;
+      appearance: auto;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid $border-color;
+  }
+}
+
+// ── Medicine Profile (Details View) ───────────────────────────────────────────
+.medicine-profile {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid $border-color;
+  flex-wrap: wrap;
+
+  .profile-avatar {
+    span {
+      font-size: 80px;
+      color: $primary-color;
+    }
+  }
+
+  .profile-info {
+    flex: 1;
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: 1.8rem;
+      color: $text-dark;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: $text-light;
+
+      span:first-child {
+        font-size: 20px;
+        color: $primary-color;
+      }
+    }
+  }
+
+  .profile-stats {
+    display: flex;
+    gap: 2rem;
+
+    .stat-item {
+      text-align: right;
+
+      .stat-label {
+        display: block;
+        font-size: 0.85rem;
+        color: $text-light;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: $text-dark;
+
+        &.danger {
+          color: $danger-color;
+        }
+      }
+    }
+  }
+}
+
+// ── Section Title ─────────────────────────────────────────────────────────────
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: $text-dark;
+  margin-bottom: 1rem;
+
+  span {
+    color: $primary-color;
+    font-size: 22px;
+  }
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+.text-danger {
+  color: $danger-color;
+  font-weight: 500;
+}
+
+// ── Loading States ────────────────────────────────────────────────────────────
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: $text-light;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+}
+
+.loading-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: $text-light;
+
+  .spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ── No Data ───────────────────────────────────────────────────────────────────
+.no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: $text-light;
+
+  span {
+    font-size: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0 0 1.5rem;
+    font-size: 1.1rem;
+  }
+}
+
+.no-data-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: $text-light;
+
+  span {
+    font-size: 48px;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-right {
+      width: 100%;
+
+      .search-box {
+        width: 100%;
+      }
+
+      .filter-tabs {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+
+  .medicine-profile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .profile-stats {
+      justify-content: center;
+    }
+
+    .profile-info .info-row {
+      justify-content: center;
+    }
+  }
+}

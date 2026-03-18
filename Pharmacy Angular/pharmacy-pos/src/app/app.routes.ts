@@ -4,6 +4,8 @@ import { LayoutComponent } from './components/layout/layout';
 import { DashboardComponent } from './components/dashboard/dashboard';
 import { CustomersComponent } from './components/customers/customers';
 import { CustomersResolver } from './resolvers/customers.resolver';
+import { MedicinesComponent} from './components/medicines/medicines'
+import { CompaniesComponent} from './components/companies/companies'
 import { DashboardResolver } from './resolvers/dashboard.resolver'; // Add this
 
 export const routes: Routes = [
@@ -26,7 +28,16 @@ export const routes: Routes = [
         resolve: { 
           customerData: CustomersResolver
         }
+      },
+      {
+        path:'medicines',
+        component: MedicinesComponent
+      },
+      {
+        path:'companies',
+        component: CompaniesComponent
       }
+
     ]
   }
 ];

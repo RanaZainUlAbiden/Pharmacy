@@ -1,0 +1,196 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Busy overlay — blocks all clicks while IPC call is running -->
+<div class="busy-overlay" *ngIf="isBusy">
+  <div class="busy-spinner"></div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <button class="back-btn" *ngIf="showForm || viewMode==='details'"
+            (click)="showForm ? cancelForm() : goBack()">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1>
+      <span class="material-symbols-outlined">business</span>
+      <span *ngIf="!showForm && viewMode==='list'">Companies</span>
+      <span *ngIf="showForm && formMode==='add'">Add New Company</span>
+      <span *ngIf="showForm && formMode==='edit'">Edit Company</span>
+      <span *ngIf="!showForm && viewMode==='details'">Company Details</span>
+    </h1>
+  </div>
+  <div class="header-right" *ngIf="!showForm && viewMode==='list'">
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" placeholder="Search companies..."
+             [(ngModel)]="searchTerm" name="searchTerm">
+    </div>
+    <button class="btn-primary" (click)="showAddForm()" [disabled]="isBusy">
+      <span class="material-symbols-outlined">add</span> New Company
+    </button>
+  </div>
+</div>
+
+<!-- List -->
+<div class="content-card" *ngIf="!showForm && viewMode==='list'">
+  <div class="table-container" *ngIf="!isLoading; else loadingTpl">
+    <table *ngIf="filteredCompanies.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Company Name</th><th>Contact</th><th>Address</th>
+          <th>Medicines</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of filteredCompanies; trackBy: trackById">
+          <td class="company-name">
+            <span class="material-symbols-outlined">business</span>{{ c.company_name }}
+          </td>
+          <td>{{ c.contact || '—' }}</td>
+          <td class="address-cell">{{ c.address || '—' }}</td>
+          <td><span class="count-badge">{{ c.medicine_count || 0 }}</span></td>
+          <td class="actions">
+            <button class="icon-btn" (click)="showDetails(c)" [disabled]="isBusy" title="View">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+            <button class="icon-btn" (click)="showEditForm(c)" [disabled]="isBusy" title="Edit">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="icon-btn delete" (click)="deleteCompany(c.company_id)" [disabled]="isBusy" title="Delete">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Form
+     [attr.data-key]="formKey" is the critical fix:
+     Every time formKey changes, Angular sees a NEW element and
+     creates a completely fresh ngForm + fresh input instances.
+     No stale model state can survive across operations. -->
+<div class="content-card" *ngIf="showForm" [attr.data-key]="formKey">
+  <form class="company-form" #f="ngForm"
+        (ngSubmit)="formMode==='add' ? addCompany() : updateCompany()">
+
+    <div class="form-group">
+      <label for="fn">
+        <span class="material-symbols-outlined">business</span>Company Name *
+      </label>
+      <input id="fn" name="fn" type="text" class="form-control"
+             [(ngModel)]="formName" required
+             placeholder="Enter company name" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="fc">
+        <span class="material-symbols-outlined">call</span>Contact Number *
+      </label>
+      <input id="fc" name="fc" type="tel" class="form-control"
+             [(ngModel)]="formContact" required
+             placeholder="03XX-XXXXXXX" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="fa">
+        <span class="material-symbols-outlined">location_on</span>Address *
+      </label>
+      <textarea id="fa" name="fa" class="form-control"
+                [(ngModel)]="formAddress" required
+                rows="3" placeholder="Enter company address"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelForm()">
+        <span class="material-symbols-outlined">close</span>Cancel
+      </button>
+      <button type="submit" class="btn-primary">
+        <span class="material-symbols-outlined">{{ formMode==='add' ? 'save' : 'update' }}</span>
+        {{ formMode==='add' ? 'Save Company' : 'Update Company' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Details -->
+<div class="content-card" *ngIf="!showForm && viewMode==='details' && selectedCompany">
+  <div class="company-profile">
+    <div class="profile-avatar">
+      <span class="material-symbols-outlined">business</span>
+    </div>
+    <div class="profile-info">
+      <h2>{{ selectedCompany.company_name }}</h2>
+      <div class="info-row">
+        <span class="material-symbols-outlined">call</span>
+        <span>{{ selectedCompany.contact || 'No contact' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="material-symbols-outlined">location_on</span>
+        <span>{{ selectedCompany.address || 'No address' }}</span>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="stat-item">
+        <span class="stat-label">Total Medicines</span>
+        <span class="stat-value">{{ companyMedicines.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span class="material-symbols-outlined">medication</span>
+    Medicines by this Company
+  </div>
+
+  <div class="table-container">
+    <table *ngIf="companyMedicines.length > 0; else noMedsTpl">
+      <thead>
+        <tr><th>Medicine</th><th>Category</th><th>Packing</th><th>Sale Price</th><th>Stock</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of companyMedicines">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>{{ m.name }}
+          </td>
+          <td>{{ m.category_name || '—' }}</td>
+          <td>{{ m.packing_name  || '—' }}</td>
+          <td class="amount">{{ formatCurrency(m.sale_price) }}</td>
+          <td>
+            <span class="stock-badge" [class]="getStockClass(m.current_stock, m.minimum_threshold)">
+              {{ m.current_stock ?? 0 }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #loadingTpl>
+  <div class="loading-state"><div class="spinner"></div><p>Loading companies...</p></div>
+</ng-template>
+
+<ng-template #noDataTpl>
+  <div class="no-data">
+    <span class="material-symbols-outlined">business</span>
+    <p>No companies found</p>
+    <button class="btn-primary" (click)="showAddForm()">Add Your First Company</button>
+  </div>
+</ng-template>
+
+<ng-template #noMedsTpl>
+  <div class="no-data-small">
+    <span class="material-symbols-outlined">medication</span>
+    <p>No medicines linked to this company</p>
+  </div>
+</ng-template>
