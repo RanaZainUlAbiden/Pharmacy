@@ -1,0 +1,63 @@
+{
+  "name": "pharmacy-pos",
+  "version": "1.0.0",
+  "main": "src/electron/main.js",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && electron .\"",
+    "electron-build": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@angular/animations": "^21.2.4",
+    "@angular/cdk": "^19.2.0",
+    "@angular/common": "^21.2.4",
+    "@angular/compiler": "^21.2.4",
+    "@angular/core": "^21.2.4",
+    "@angular/forms": "^21.2.4",
+    "@angular/material": "^19.2.0",
+    "@angular/platform-browser": "^21.2.4",
+    "@angular/platform-browser-dynamic": "^21.2.4",
+    "@angular/router": "^21.2.4",
+    "moment": "^2.29.4",
+    "rxjs": "~7.8.0",
+    "sqlite3": "^5.1.7",
+    "tslib": "^2.6.2",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.2",
+    "@angular/cli": "^21.2.2",
+    "@angular/compiler-cli": "^21.2.4",
+    "@types/node": "^22.13.10",
+    "concurrently": "^8.2.2",
+    "electron": "^34.3.3",
+    "electron-builder": "^26.8.1",
+    "typescript": "^6.0.1-rc",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.pharmacy.pos",
+    "productName": "Pharmacy POS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "src/electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

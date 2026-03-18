@@ -1,0 +1,103 @@
+<div class="login-container">
+  <div class="login-box">
+    <!-- Logo/Header -->
+    <div class="login-header">
+      <div class="logo">
+        <span class="material-symbols-outlined">local_pharmacy</span>
+      </div>
+      <h1>Pharmacy POS System</h1>
+      <p>Login to access your pharmacy management system</p>
+    </div>
+
+    <!-- Login Form -->
+    <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="login-form">
+      <!-- Username Field -->
+      <div class="form-group">
+        <label for="username">
+          <span class="material-symbols-outlined">person</span>
+          Username
+        </label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username"
+          [(ngModel)]="credentials.username"
+          required
+          placeholder="Enter your username"
+          class="form-control"
+          [class.error]="submitted && !credentials.username"
+        >
+        <div class="error-message" *ngIf="submitted && !credentials.username">
+          Username is required
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">
+          <span class="material-symbols-outlined">lock</span>
+          Password
+        </label>
+        <div class="password-field">
+          <input 
+            [type]="showPassword ? 'text' : 'password'"
+            id="password" 
+            name="password"
+            [(ngModel)]="credentials.password"
+            required
+            placeholder="Enter your password"
+            class="form-control"
+            [class.error]="submitted && !credentials.password"
+          >
+          <button 
+            type="button" 
+            class="toggle-password"
+            (click)="showPassword = !showPassword"
+          >
+            <span class="material-symbols-outlined">
+              {{ showPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
+        <div class="error-message" *ngIf="submitted && !credentials.password">
+          Password is required
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="errorMessage">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Loading State -->
+      <div class="alert alert-info" *ngIf="isLoading">
+        <span class="material-symbols-outlined">hourglass_empty</span>
+        Authenticating...
+      </div>
+
+      <!-- Login Button -->
+      <button 
+        type="submit" 
+        class="login-button"
+        [disabled]="isLoading"
+      >
+        <span class="material-symbols-outlined">login</span>
+        {{ isLoading ? 'Please wait...' : 'Login' }}
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <p>Default credentials: admin / admin123</p>
+      <p class="version">Version 1.0.0</p>
+    </div>
+  </div>
+
+  <!-- Background Decoration -->
+  <div class="background-decoration">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+  </div>
+</div>
