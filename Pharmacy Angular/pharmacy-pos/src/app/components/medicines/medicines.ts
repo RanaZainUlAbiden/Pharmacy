@@ -47,6 +47,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     private db: DatabaseService,
     private zone: NgZone,
     private cdr: ChangeDetectorRef
+    // Router hata diya — delete ke liye zaroorat nahi thi, yahi stuck hone ka asli sabab tha
   ) {}
 
   ngOnInit() {
@@ -90,7 +91,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
       if (!this.isDestroyed) {
         this.companies = companiesRes || [];
-        
+
         // Remove duplicate categories
         const uniqueCategories = new Map();
         (categoriesRes || []).forEach((cat: any) => {
@@ -99,7 +100,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
           }
         });
         this.categories = Array.from(uniqueCategories.values());
-        
+
         // Remove duplicate packings
         const uniquePackings = new Map();
         (packingsRes || []).forEach((p: any) => {
@@ -108,7 +109,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
           }
         });
         this.packings = Array.from(uniquePackings.values());
-        
+
         await this.loadMedicines();
       }
     } catch (error) {
@@ -124,7 +125,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
   async loadMedicines() {
     if (this.isDestroyed) return;
-    
+
     const result = await this.dbRun(`
       SELECT 
         m.product_id, 
@@ -150,6 +151,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
     if (!this.isDestroyed) {
       this.medicines = result || [];
+      this.cdr.detectChanges();
     }
   }
 
@@ -174,7 +176,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;
     if (this.toastTimer) clearTimeout(this.toastTimer);
-    
+
     this.zone.run(() => {
       this.toast = { message: msg, type };
       this.cdr.detectChanges();
@@ -201,32 +203,12 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     );
   }
 
-  trackById(_: number, item: any) { 
-    return item.product_id; 
+  trackById(_: number, item: any) {
+    return item.product_id;
   }
 
   // Form management
-  private openForm(mode: 'add' | 'edit') {
-    if (this.isDestroyed) return;
-    
-    this.showForm = false;
-    this.cdr.detectChanges();
-    
-    this.formKey++;
-    this.formMode = mode;
-    
-    requestAnimationFrame(() => {
-      this.zone.run(() => {
-        if (!this.isDestroyed) {
-          this.showForm = true;
-          this.cdr.detectChanges();
-        }
-      });
-    });
-  }
-
   showAddForm() {
-    // Reset all form fields
     this.formId = null;
     this.formName = '';
     this.formDescription = '';
@@ -235,16 +217,17 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formPackingId = null;
     this.formSalePrice = null;
     this.formMinimumThreshold = null;
-    
-    // Make sure we're in list view
+
     this.viewMode = 'list';
     this.selectedMedicine = null;
-    
-    this.openForm('add');
+    this.formMode = 'add';
+    this.showForm = true;
+    this.formKey++;
+
+    this.cdr.detectChanges();
   }
 
   showEditForm(medicine: any) {
-    // Set form values
     this.formId = medicine.product_id;
     this.formName = medicine.name || '';
     this.formDescription = medicine.description || '';
@@ -253,44 +236,43 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formPackingId = medicine.packing_id;
     this.formSalePrice = medicine.sale_price;
     this.formMinimumThreshold = medicine.minimum_threshold || 0;
-    
-    // Make sure we're in list view
+
     this.viewMode = 'list';
     this.selectedMedicine = null;
-    
-    this.openForm('edit');
+    this.formMode = 'edit';
+    this.showForm = true;
+    this.formKey++;
+
+    this.cdr.detectChanges();
   }
 
   showDetails(medicine: any) {
     if (this.isDestroyed) return;
-    
-    // Hide any open form
+
     this.showForm = false;
     this.formMode = null;
-    
-    // Set details view
     this.selectedMedicine = medicine;
     this.medicineBatches = [];
     this.viewMode = 'details';
     this.cdr.detectChanges();
-    
+
     this.loadMedicineBatches(medicine.product_id);
   }
 
   cancelForm() {
     if (this.isDestroyed) return;
-    
-    // Simply hide the form and go back to list view
+
     this.showForm = false;
     this.formMode = null;
     this.viewMode = 'list';
+    this.selectedMedicine = null;
+    this.medicineBatches = [];
     this.cdr.detectChanges();
   }
 
   goBack() {
     if (this.isDestroyed) return;
-    
-    // Hide any open form and go back to list view
+
     this.showForm = false;
     this.formMode = null;
     this.viewMode = 'list';
@@ -355,16 +337,17 @@ export class MedicinesComponent implements OnInit, OnDestroy {
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine added successfully!');
-        
-        // Close form and return to list view
+
         this.showForm = false;
         this.formMode = null;
         this.viewMode = 'list';
+        this.selectedMedicine = null;
+        this.medicineBatches = [];
       }
     } catch (error: any) {
       console.error('Add error:', error);
       if (!this.isDestroyed) {
-        const msg = error?.message?.includes('UNIQUE') 
+        const msg = error?.message?.includes('UNIQUE')
           ? 'This medicine already exists for the selected company'
           : 'Failed to add medicine';
         this.showToast(msg, 'error');
@@ -406,11 +389,12 @@ export class MedicinesComponent implements OnInit, OnDestroy {
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine updated successfully!');
-        
-        // Close form and return to list view
+
         this.showForm = false;
         this.formMode = null;
         this.viewMode = 'list';
+        this.selectedMedicine = null;
+        this.medicineBatches = [];
       }
     } catch (error: any) {
       console.error('Update error:', error);
@@ -428,95 +412,47 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // FIXED DELETE METHOD - No more frozen inputs!
-  deleteMedicine(medicineId: number) {
-    // Run in zone to ensure change detection works
-    this.zone.run(() => {
-      // Simple confirmation
-      const confirmed = confirm('Are you sure you want to delete this medicine?');
-      if (!confirmed || this.isBusy || this.isDestroyed) return;
+  // ✅ FIXED DELETE — Router navigation hata di, seedha loadMedicines() call hoti hai
+  async deleteMedicine(medicineId: number) {
+    if (this.isBusy || this.isDestroyed) return;
 
-      // Set busy state
-      this.isBusy = true;
-      this.cdr.detectChanges();
+    const confirmed = confirm('Delete this medicine?');
+    if (!confirmed) return;
 
-      // Store backup for potential rollback
-      const backup = [...this.medicines];
-      
-      // Optimistically remove from UI
-      this.medicines = this.medicines.filter(m => m.product_id !== medicineId);
-      this.cdr.detectChanges();
+    this.isBusy = true;
+    this.cdr.detectChanges();
 
-      // Perform actual delete
-      this.dbRun('DELETE FROM medicines WHERE product_id = ?', [medicineId], 'run')
-        .then(() => {
-          this.zone.run(() => {
-            if (!this.isDestroyed) {
-              this.showToast('Medicine deleted successfully!');
-              
-              // IMPORTANT: Reset all view states
-              this.showForm = false;
-              this.formMode = null;
-              this.viewMode = 'list';
-              this.selectedMedicine = null;
-              this.medicineBatches = [];
-              
-              // Reset busy state
-              this.isBusy = false;
-              
-              // Force multiple change detections to ensure UI updates
-              this.cdr.detectChanges();
-              
-              // Extra safety - detect changes again after a tiny delay
-              setTimeout(() => {
-                this.zone.run(() => {
-                  if (!this.isDestroyed) {
-                    this.cdr.detectChanges();
-                  }
-                });
-              }, 10);
-            }
-          });
-        })
-        .catch((error: any) => {
-          console.error('Delete error:', error);
-          
-          this.zone.run(() => {
-            if (!this.isDestroyed) {
-              // Rollback to backup
-              this.medicines = backup;
-              
-              // Show appropriate error
-              const msg = error?.message?.includes('FOREIGN KEY')
-                ? 'Cannot delete: This medicine has purchase or sale records'
-                : 'Failed to delete medicine';
-              this.showToast(msg, 'error');
-              
-              // IMPORTANT: Reset all view states
-              this.showForm = false;
-              this.formMode = null;
-              this.viewMode = 'list';
-              this.selectedMedicine = null;
-              this.medicineBatches = [];
-              
-              // Reset busy state
-              this.isBusy = false;
-              
-              // Force multiple change detections
-              this.cdr.detectChanges();
-              
-              // Extra safety
-              setTimeout(() => {
-                this.zone.run(() => {
-                  if (!this.isDestroyed) {
-                    this.cdr.detectChanges();
-                  }
-                });
-              }, 10);
-            }
-          });
-        });
-    });
+    try {
+      await this.dbRun(
+        'DELETE FROM medicines WHERE product_id = ?',
+        [medicineId],
+        'run'
+      );
+
+      if (!this.isDestroyed) {
+        await this.loadMedicines();
+        this.showToast('Medicine deleted successfully!');
+
+        // Agar details view mein thay aur wohi medicine delete ki toh list par wapas jao
+        if (this.selectedMedicine?.product_id === medicineId) {
+          this.showForm = false;
+          this.formMode = null;
+          this.viewMode = 'list';
+          this.selectedMedicine = null;
+          this.medicineBatches = [];
+        }
+      }
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      if (!this.isDestroyed) {
+        this.showToast('Failed to delete medicine', 'error');
+      }
+    } finally {
+      if (!this.isDestroyed) {
+        this.isBusy = false;
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   // Helpers
