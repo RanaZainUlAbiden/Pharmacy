@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -11,303 +11,489 @@ import { DatabaseService } from '../../services/database.service';
   templateUrl: './medicines.html',
   styleUrls: ['./medicines.scss']
 })
-export class MedicinesComponent implements OnInit {
-  // View mode
-  viewMode: 'list' | 'add' | 'edit' | 'details' = 'list';
+export class MedicinesComponent implements OnInit, OnDestroy {
 
-  // Data
+  // ── View ──────────────────────────────────────────────────────────────────
+  viewMode: 'list' | 'details' = 'list';
+  formMode: 'add' | 'edit' | null = null;
+  showForm = false;
+  formKey = 0; // Forces fresh form on each open
+
+  // ── Data ──────────────────────────────────────────────────────────────────
   medicines: any[] = [];
-  selectedMedicine: any = null;
-  searchTerm: string = '';
-  activeFilter: 'all' | 'lowstock' | 'expiring' = 'all';
-
-  // Dropdown options
   companies: any[] = [];
   categories: any[] = [];
   packings: any[] = [];
-
-  // Medicine details
+  selectedMedicine: any = null;
   medicineBatches: any[] = [];
+  searchTerm = '';
 
-  // Form model
-  medicineForm: any = {
-    name: '',
-    description: '',
-    company_id: '',
-    packing_id: '',
-    category_id: '',
-    sale_price: '',
-    minimum_threshold: 0
-  };
+  // ── Form fields ───────────────────────────────────────────────────────────
+  formId: number | null = null;
+  formName = '';
+  formDescription = '';
+  formCompanyId: number | null = null;
+  formCategoryId: number | null = null;
+  formPackingId: number | null = null;
+  formSalePrice: number | null = null;
+  formMinimumThreshold: number | null = null;
 
-  // Loading states
-  loading = {
-    medicines: false,
-    batches: false
-  };
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  toast: { message: string; type: 'success' | 'error' } | null = null;
+  private toastTimer: any = null;
+
+  // ── Busy state ────────────────────────────────────────────────────────────
+  isBusy = false;
+  isLoading = false;
+
+  // ── Cleanup flag ──────────────────────────────────────────────────────────
+  private isDestroyed = false;
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private db: DatabaseService
+    private db: DatabaseService,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
-    // Read resolver data if provided, then load dropdowns
-    this.route.data.subscribe((data: any) => {
-      if (data && data.medicineData) {
-        this.medicines = data.medicineData.medicines || [];
-      }
-    });
+    this.loadInitialData();
+  }
 
-    // Read query params for filter (e.g. from dashboard shortcut)
-    this.route.queryParams.subscribe(params => {
-      if (params['filter'] === 'lowstock') {
-        this.activeFilter = 'lowstock';
-      } else if (params['filter'] === 'expiring') {
-        this.activeFilter = 'expiring';
-      }
-    });
-
-    this.loadDropdowns();
-
-    // If no resolver data, load manually
-    if (this.medicines.length === 0) {
-      this.reloadMedicines();
+  ngOnDestroy() {
+    this.isDestroyed = true;
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
     }
   }
 
-  // ── Data Loaders ──────────────────────────────────────────────────────────
-
-  async reloadMedicines() {
-    this.loading.medicines = true;
-    try {
-      this.medicines = await this.db.getAllMedicines();
-    } catch (error) {
-      console.error('Error loading medicines:', error);
-    } finally {
-      this.loading.medicines = false;
-    }
+  // ── Database helper (ensures zone.run) ────────────────────────────────────
+  private dbRun(sql: string, params: any[] = [], method = 'all'): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.db.query(sql, params, method)
+        .then((result: any) => {
+          this.zone.run(() => {
+            if (!this.isDestroyed) {
+              resolve(result);
+            }
+          });
+        })
+        .catch((err: any) => {
+          this.zone.run(() => {
+            console.error('Database error:', err);
+            if (!this.isDestroyed) {
+              reject(err);
+            }
+          });
+        });
+    });
   }
 
-  async loadDropdowns() {
+  // ── Load all dropdown data and medicines ──────────────────────────────────
+  async loadInitialData() {
+    if (this.isDestroyed) return;
+    this.isLoading = true;
+    this.cdr.detectChanges();
+
     try {
-      const [companies, categories, packings] = await Promise.all([
-        this.db.query('SELECT * FROM company ORDER BY company_name'),
-        this.db.query('SELECT * FROM categories ORDER BY category_name'),
-        this.db.query('SELECT * FROM packing ORDER BY packing_name')
+      // Load dropdowns in parallel
+      const [companiesRes, categoriesRes, packingsRes, medicinesRes] = await Promise.all([
+        this.dbRun('SELECT company_id, company_name FROM company ORDER BY company_name'),
+        this.dbRun('SELECT category_id, category_name FROM categories ORDER BY category_name'),
+        this.dbRun('SELECT packing_id, packing_name FROM packing ORDER BY packing_name'),
+        this.loadMedicines() // This sets this.medicines internally
       ]);
-      this.companies = companies || [];
-      this.categories = categories || [];
-      this.packings = packings || [];
-    } catch (error) {
-      console.error('Error loading dropdowns:', error);
-    }
-  }
 
-  async loadMedicineBatches(productId: number) {
-    this.loading.batches = true;
-    try {
-      this.medicineBatches = await this.db.query(
-        `SELECT
-           bi.*,
-           pb.purchase_date,
-           pb.BatchName
-         FROM batch_items bi
-         JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
-         WHERE bi.product_id = ?
-         ORDER BY bi.expiry_date ASC`,
-        [productId]
-      );
+      if (!this.isDestroyed) {
+        this.companies = Array.isArray(companiesRes) ? companiesRes : [];
+        this.categories = Array.isArray(categoriesRes) ? categoriesRes : [];
+        this.packings = Array.isArray(packingsRes) ? packingsRes : [];
+      }
     } catch (error) {
-      console.error('Error loading batches:', error);
+      console.error('Failed to load initial data:', error);
+      if (!this.isDestroyed) {
+        this.showToast('Failed to load required data', 'error');
+      }
     } finally {
-      this.loading.batches = false;
+      if (!this.isDestroyed) {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
     }
   }
 
-  // ── Filtered list ──────────────────────────────────────────────────────────
+  async loadMedicines() {
+    if (this.isDestroyed) return;
+    
+    try {
+      const result = await this.dbRun(`
+        SELECT 
+          m.product_id,
+          m.name,
+          m.description,
+          m.sale_price,
+          m.minimum_threshold,
+          c.company_id,
+          c.company_name,
+          cat.category_id,
+          cat.category_name,
+          p.packing_id,
+          p.packing_name,
+          COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
+        FROM medicines m
+        LEFT JOIN company c ON m.company_id = c.company_id
+        LEFT JOIN categories cat ON m.category_id = cat.category_id
+        LEFT JOIN packing p ON m.packing_id = p.packing_id
+        LEFT JOIN batch_items bi ON m.product_id = bi.product_id
+        GROUP BY m.product_id
+        ORDER BY m.name
+      `);
 
-  get filteredMedicines() {
-    let list = this.medicines;
-
-    if (this.activeFilter === 'lowstock') {
-      list = list.filter(m =>
-        (m.current_stock ?? 0) < (m.minimum_threshold ?? 0)
-      );
-    } else if (this.activeFilter === 'expiring') {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() + 60);
-      list = list.filter(m =>
-        m.next_expiry && new Date(m.next_expiry) <= cutoff
-      );
+      if (!this.isDestroyed) {
+        this.medicines = Array.isArray(result) ? result : [];
+      }
+    } catch (error) {
+      console.error('Failed to load medicines:', error);
+      if (!this.isDestroyed) {
+        this.showToast('Failed to load medicines', 'error');
+      }
     }
-
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      list = list.filter(m =>
-        m.name.toLowerCase().includes(term) ||
-        (m.company_name && m.company_name.toLowerCase().includes(term)) ||
-        (m.category_name && m.category_name.toLowerCase().includes(term))
-      );
-    }
-
-    return list;
   }
 
-  setFilter(filter: 'all' | 'lowstock' | 'expiring') {
-    this.activeFilter = filter;
+  async loadMedicineBatches(medicineId: number) {
+    if (this.isDestroyed) return;
+
+    try {
+      const result = await this.dbRun(`
+        SELECT 
+          bi.*,
+          pb.BatchName,
+          pb.purchase_date
+        FROM batch_items bi
+        JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
+        WHERE bi.product_id = ?
+        ORDER BY bi.expiry_date
+      `, [medicineId]);
+
+      if (!this.isDestroyed) {
+        this.medicineBatches = Array.isArray(result) ? result : [];
+        this.cdr.detectChanges();
+      }
+    } catch (error) {
+      console.error('Failed to load batches:', error);
+    }
   }
 
-  // ── View switching ─────────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  private showToast(msg: string, type: 'success' | 'error' = 'success') {
+    if (this.isDestroyed) return;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    
+    this.zone.run(() => {
+      this.toast = { message: msg, type };
+      this.cdr.detectChanges();
+    });
+
+    this.toastTimer = setTimeout(() => {
+      this.zone.run(() => {
+        if (!this.isDestroyed) {
+          this.toast = null;
+          this.cdr.detectChanges();
+        }
+      });
+    }, 3000);
+  }
+
+  // ── Filtered list ─────────────────────────────────────────────────────────
+  get filteredMedicines(): any[] {
+    if (!this.searchTerm.trim() || this.isDestroyed) return this.medicines;
+    const term = this.searchTerm.toLowerCase();
+    return this.medicines.filter(m =>
+      m.name.toLowerCase().includes(term) ||
+      (m.company_name && m.company_name.toLowerCase().includes(term)) ||
+      (m.category_name && m.category_name.toLowerCase().includes(term))
+    );
+  }
+
+  trackById(_: number, item: any) { 
+    return item.product_id; 
+  }
+
+  // ── Form management (fixed version - no race condition) ───────────────────
+  private openForm(mode: 'add' | 'edit') {
+    if (this.isDestroyed) return;
+
+    // 1. Hide form
+    this.showForm = false;
+    this.cdr.detectChanges();
+
+    // 2. Increment key for fresh form
+    this.formKey++;
+    this.formMode = mode;
+
+    // 3. Use requestAnimationFrame instead of setTimeout for better timing
+    requestAnimationFrame(() => {
+      this.zone.run(() => {
+        if (!this.isDestroyed) {
+          this.showForm = true;
+          this.cdr.detectChanges();
+        }
+      });
+    });
+  }
 
   showAddForm() {
-    this.resetForm();
-    this.viewMode = 'add';
+    // Reset all form fields
+    this.formId = null;
+    this.formName = '';
+    this.formDescription = '';
+    this.formCompanyId = null;
+    this.formCategoryId = null;
+    this.formPackingId = null;
+    this.formSalePrice = null;
+    this.formMinimumThreshold = null;
+    
+    this.openForm('add');
   }
 
   showEditForm(medicine: any) {
-    this.medicineForm = {
-      product_id: medicine.product_id,
-      name: medicine.name,
-      description: medicine.description || '',
-      company_id: medicine.company_id,
-      packing_id: medicine.packing_id,
-      category_id: medicine.category_id,
-      sale_price: medicine.sale_price,
-      minimum_threshold: medicine.minimum_threshold || 0
-    };
-    this.viewMode = 'edit';
+    // Set form values
+    this.formId = medicine.product_id;
+    this.formName = medicine.name || '';
+    this.formDescription = medicine.description || '';
+    this.formCompanyId = medicine.company_id;
+    this.formCategoryId = medicine.category_id;
+    this.formPackingId = medicine.packing_id;
+    this.formSalePrice = medicine.sale_price;
+    this.formMinimumThreshold = medicine.minimum_threshold || 0;
+    
+    this.openForm('edit');
   }
 
-  async showDetails(medicine: any) {
+  showDetails(medicine: any) {
+    if (this.isDestroyed) return;
+    
+    this.showForm = false;
+    this.formMode = null;
     this.selectedMedicine = medicine;
+    this.medicineBatches = [];
     this.viewMode = 'details';
-    await this.loadMedicineBatches(medicine.product_id);
+    this.cdr.detectChanges();
+    
+    this.loadMedicineBatches(medicine.product_id);
   }
 
   cancelForm() {
-    this.resetForm();
-    this.viewMode = 'list';
+    if (this.isDestroyed) return;
+    this.showForm = false;
+    this.formMode = null;
+    this.cdr.detectChanges();
   }
 
   goBack() {
+    if (this.isDestroyed) return;
+    this.showForm = false;
+    this.formMode = null;
     this.viewMode = 'list';
     this.selectedMedicine = null;
     this.medicineBatches = [];
+    this.cdr.detectChanges();
   }
 
-  // ── CRUD ───────────────────────────────────────────────────────────────────
-
-  async addMedicine() {
-    if (!this.medicineForm.name || !this.medicineForm.company_id ||
-        !this.medicineForm.category_id || !this.medicineForm.packing_id ||
-        !this.medicineForm.sale_price) {
-      alert('Please fill all required fields.');
-      return;
+  // ── Validation helpers ────────────────────────────────────────────────────
+  private validateForm(): boolean {
+    if (!this.formName?.trim()) {
+      this.showToast('Medicine name is required', 'error');
+      return false;
     }
+    if (!this.formCompanyId) {
+      this.showToast('Please select a company', 'error');
+      return false;
+    }
+    if (!this.formCategoryId) {
+      this.showToast('Please select a category', 'error');
+      return false;
+    }
+    if (!this.formPackingId) {
+      this.showToast('Please select packing type', 'error');
+      return false;
+    }
+    if (!this.formSalePrice || this.formSalePrice <= 0) {
+      this.showToast('Sale price must be greater than 0', 'error');
+      return false;
+    }
+    if (this.formMinimumThreshold === null || this.formMinimumThreshold < 0) {
+      this.showToast('Minimum threshold cannot be negative', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  // ── ADD ───────────────────────────────────────────────────────────────────
+  async addMedicine() {
+    if (!this.validateForm() || this.isBusy || this.isDestroyed) return;
+
+    this.isBusy = true;
+    this.cdr.detectChanges();
+
+    // Close form immediately (optimistic UI)
+    this.showForm = false;
+    this.formMode = null;
+    this.cdr.detectChanges();
 
     try {
-      await this.db.query(
-        `INSERT INTO medicines (name, description, company_id, packing_id, category_id, sale_price, minimum_threshold)
+      await this.dbRun(
+        `INSERT INTO medicines 
+         (name, description, company_id, category_id, packing_id, sale_price, minimum_threshold)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          this.medicineForm.name,
-          this.medicineForm.description || null,
-          this.medicineForm.company_id,
-          this.medicineForm.packing_id,
-          this.medicineForm.category_id,
-          this.medicineForm.sale_price,
-          this.medicineForm.minimum_threshold || 0
+          this.formName.trim(),
+          this.formDescription?.trim() || null,
+          this.formCompanyId,
+          this.formCategoryId,
+          this.formPackingId,
+          this.formSalePrice,
+          this.formMinimumThreshold || 0
         ],
         'run'
       );
-      await this.reloadMedicines();
-      this.resetForm();
-      this.viewMode = 'list';
+
+      if (!this.isDestroyed) {
+        await this.loadMedicines();
+        this.showToast('Medicine added successfully!');
+      }
     } catch (error: any) {
-      console.error('Error adding medicine:', error);
-      if (error?.message?.includes('UNIQUE')) {
-        alert('A medicine with this name and company already exists.');
-      } else {
-        alert('Failed to add medicine. Please try again.');
+      console.error('Add medicine error:', error);
+      if (!this.isDestroyed) {
+        // Check for UNIQUE constraint (name + company)
+        if (error?.message?.includes('UNIQUE')) {
+          this.showToast('This medicine already exists for the selected company', 'error');
+        } else {
+          this.showToast('Failed to add medicine', 'error');
+        }
+      }
+    } finally {
+      if (!this.isDestroyed) {
+        this.isBusy = false;
+        this.cdr.detectChanges();
       }
     }
   }
 
+  // ── UPDATE ────────────────────────────────────────────────────────────────
   async updateMedicine() {
-    if (!this.medicineForm.name || !this.medicineForm.company_id ||
-        !this.medicineForm.category_id || !this.medicineForm.packing_id ||
-        !this.medicineForm.sale_price) {
-      alert('Please fill all required fields.');
-      return;
-    }
+    if (!this.validateForm() || !this.formId || this.isBusy || this.isDestroyed) return;
+
+    const id = this.formId;
+    this.isBusy = true;
+    this.cdr.detectChanges();
+
+    // Close form immediately
+    this.showForm = false;
+    this.formMode = null;
+    this.cdr.detectChanges();
 
     try {
-      await this.db.query(
-        `UPDATE medicines
-         SET name = ?, description = ?, company_id = ?, packing_id = ?,
-             category_id = ?, sale_price = ?, minimum_threshold = ?
+      await this.dbRun(
+        `UPDATE medicines 
+         SET name = ?, description = ?, company_id = ?, category_id = ?, 
+             packing_id = ?, sale_price = ?, minimum_threshold = ?
          WHERE product_id = ?`,
         [
-          this.medicineForm.name,
-          this.medicineForm.description || null,
-          this.medicineForm.company_id,
-          this.medicineForm.packing_id,
-          this.medicineForm.category_id,
-          this.medicineForm.sale_price,
-          this.medicineForm.minimum_threshold || 0,
-          this.medicineForm.product_id
+          this.formName.trim(),
+          this.formDescription?.trim() || null,
+          this.formCompanyId,
+          this.formCategoryId,
+          this.formPackingId,
+          this.formSalePrice,
+          this.formMinimumThreshold || 0,
+          id
         ],
         'run'
       );
-      await this.reloadMedicines();
-      this.resetForm();
-      this.viewMode = 'list';
+
+      if (!this.isDestroyed) {
+        await this.loadMedicines();
+        this.showToast('Medicine updated successfully!');
+      }
     } catch (error: any) {
-      console.error('Error updating medicine:', error);
-      if (error?.message?.includes('UNIQUE')) {
-        alert('A medicine with this name and company already exists.');
-      } else {
-        alert('Failed to update medicine. Please try again.');
+      console.error('Update medicine error:', error);
+      if (!this.isDestroyed) {
+        if (error?.message?.includes('UNIQUE')) {
+          this.showToast('This medicine already exists for the selected company', 'error');
+        } else {
+          this.showToast('Failed to update medicine', 'error');
+        }
+      }
+    } finally {
+      if (!this.isDestroyed) {
+        this.isBusy = false;
+        this.cdr.detectChanges();
       }
     }
   }
 
-  async deleteMedicine(productId: number) {
-    if (!confirm('Are you sure you want to delete this medicine?')) return;
+  // ── DELETE (FIXED - no more frozen inputs) ───────────────────────────────
+  deleteMedicine(medicineId: number) {
+    // Run everything in zone
+    this.zone.run(() => {
+      const confirmed = confirm('Are you sure you want to delete this medicine?\n\nThis will also delete all associated batch records.');
+      if (!confirmed || this.isBusy || this.isDestroyed) return;
 
-    try {
-      await this.db.query(
-        'DELETE FROM medicines WHERE product_id = ?',
-        [productId],
-        'run'
-      );
-      await this.reloadMedicines();
-    } catch (error: any) {
-      console.error('Error deleting medicine:', error);
-      if (error?.message?.includes('FOREIGN KEY')) {
-        alert('Cannot delete: this medicine is used in existing purchases or sales.');
-      } else {
-        alert('Failed to delete medicine.');
-      }
-    }
+      this.isBusy = true;
+      this.cdr.detectChanges();
+
+      // Optimistic removal
+      const backup = [...this.medicines];
+      this.medicines = this.medicines.filter(m => m.product_id !== medicineId);
+      this.cdr.detectChanges();
+
+      // Perform deletion
+      this.dbRun('DELETE FROM medicines WHERE product_id = ?', [medicineId], 'run')
+        .then(() => {
+          this.zone.run(() => {
+            if (!this.isDestroyed) {
+              this.showToast('Medicine deleted successfully!');
+              this.isBusy = false;
+              this.cdr.detectChanges();
+            }
+          });
+        })
+        .catch((error: any) => {
+          console.error('Delete error:', error);
+          
+          this.zone.run(() => {
+            if (!this.isDestroyed) {
+              // Rollback
+              this.medicines = backup;
+              
+              // Show appropriate error message
+              if (error?.message?.includes('FOREIGN KEY') || error?.message?.includes('constraint failed')) {
+                this.showToast('Cannot delete: This medicine has purchase or sale records', 'error');
+              } else {
+                this.showToast('Failed to delete medicine', 'error');
+              }
+              
+              // CRITICAL: Always reset isBusy
+              this.isBusy = false;
+              this.cdr.detectChanges();
+              
+              // Extra safety: force another change detection
+              setTimeout(() => {
+                this.zone.run(() => {
+                  if (!this.isDestroyed) {
+                    this.cdr.detectChanges();
+                  }
+                });
+              }, 50);
+            }
+          });
+        });
+    });
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
-  private resetForm() {
-    this.medicineForm = {
-      name: '',
-      description: '',
-      company_id: '',
-      packing_id: '',
-      category_id: '',
-      sale_price: '',
-      minimum_threshold: 0
-    };
-  }
-
+  // ── Helpers ───────────────────────────────────────────────────────────────
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency',
@@ -316,64 +502,26 @@ export class MedicinesComponent implements OnInit {
     }).format(amount || 0);
   }
 
-  formatDate(date: string): string {
-    if (!date) return '—';
-    return new Date(date).toLocaleDateString('en-PK', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  getStockClass(stock: number, threshold: number): string {
+    const s = stock ?? 0;
+    const t = threshold ?? 0;
+    if (s === 0) return 'badge-out';
+    if (s < t * 0.25) return 'badge-critical';
+    if (s < t) return 'badge-low';
+    return 'badge-ok';
   }
 
-  isExpiringSoon(expiryDate: string): boolean {
+  getBatchStockClass(remaining: number): string {
+    if (remaining === 0) return 'badge-out';
+    if (remaining < 10) return 'badge-critical';
+    if (remaining < 50) return 'badge-low';
+    return 'badge-ok';
+  }
+
+  isExpired(expiryDate: string): boolean {
     if (!expiryDate) return false;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + 60);
-    return new Date(expiryDate) <= cutoff;
-  }
-
-  getStockBadgeClass(medicine: any): string {
-    const stock = medicine.current_stock ?? 0;
-    const threshold = medicine.minimum_threshold ?? 0;
-    if (stock === 0) return 'badge-out';
-    if (stock < threshold * 0.25) return 'badge-critical';
-    if (stock < threshold) return 'badge-low';
-    return 'badge-ok';
-  }
-
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'OUT_OF_STOCK': return 'chip-out';
-      case 'CRITICAL':     return 'chip-critical';
-      case 'LOW':          return 'chip-low';
-      default:             return 'chip-ok';
-    }
-  }
-
-  getStatusLabel(status: string): string {
-    switch (status) {
-      case 'OUT_OF_STOCK': return 'Out of Stock';
-      case 'CRITICAL':     return 'Critical';
-      case 'LOW':          return 'Low Stock';
-      default:             return 'Adequate';
-    }
-  }
-
-  getRemainingClass(qty: number): string {
-    if (qty === 0) return 'badge-out';
-    if (qty <= 5) return 'badge-critical';
-    return 'badge-ok';
-  }
-
-  getBatchStatusClass(batch: any): string {
-    if (batch.quantity_remaining === 0) return 'chip-out';
-    if (this.isExpiringSoon(batch.expiry_date)) return 'chip-low';
-    return 'chip-ok';
-  }
-
-  getBatchStatusLabel(batch: any): string {
-    if (batch.quantity_remaining === 0) return 'Empty';
-    if (this.isExpiringSoon(batch.expiry_date)) return 'Expiring Soon';
-    return 'Active';
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    return expiry < today;
   }
 }

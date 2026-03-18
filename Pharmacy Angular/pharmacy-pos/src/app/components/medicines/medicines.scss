@@ -1,14 +1,67 @@
-// ── Variables (same as rest of the app) ──────────────────────────────────────
+// Variables (matching companies)
 $primary-color: #667eea;
 $secondary-color: #764ba2;
 $success-color: #10b981;
-$warning-color: #f59e0b;
 $danger-color: #ef4444;
+$warning-color: #f59e0b;
 $text-dark: #1f2937;
 $text-light: #6b7280;
 $border-color: #e5e7eb;
 $bg-light: #f9fafb;
-$card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+
+// ── Busy overlay ──────────────────────────────────────────────────────────────
+.busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: blur(1px);
+
+  .busy-spinner {
+    width: 48px; height: 48px;
+    border: 4px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+.toast-container {
+  position: fixed;
+  top: 1.5rem; right: 1.5rem;
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  min-width: 280px;
+
+  .material-symbols-outlined { font-size: 22px; }
+
+  &.toast-success {
+    background: #ecfdf5; color: #065f46; border-left: 4px solid $success-color;
+    .material-symbols-outlined { color: $success-color; }
+  }
+  &.toast-error {
+    background: #fef2f2; color: #991b1b; border-left: 4px solid $danger-color;
+    .material-symbols-outlined { color: $danger-color; }
+  }
+}
+
+@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
 // ── Page Header ───────────────────────────────────────────────────────────────
 .page-header {
@@ -16,8 +69,6 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
 
   .header-left {
     display: flex;
@@ -33,11 +84,7 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
       display: flex;
       align-items: center;
       transition: all 0.2s;
-
-      &:hover {
-        background: $bg-light;
-        color: $primary-color;
-      }
+      &:hover { background: $bg-light; color: $primary-color; }
     }
 
     h1 {
@@ -47,96 +94,39 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
       margin: 0;
       font-size: 1.8rem;
       color: $text-dark;
-
-      span:first-child {
-        font-size: 32px;
-        color: $primary-color;
-      }
+      span:first-child { font-size: 32px; color: $primary-color; }
     }
   }
 
   .header-right {
     display: flex;
-    align-items: center;
     gap: 1rem;
-    flex-wrap: wrap;
-  }
-}
 
-// ── Filter Tabs ───────────────────────────────────────────────────────────────
-.filter-tabs {
-  display: flex;
-  background: white;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  overflow: hidden;
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: white;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      width: 300px;
 
-  .filter-tab {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.55rem 1rem;
-    border: none;
-    background: transparent;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: $text-light;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    span {
-      font-size: 16px;
-    }
-
-    &:not(:last-child) {
-      border-right: 1px solid $border-color;
-    }
-
-    &:hover {
-      background: $bg-light;
-      color: $text-dark;
-    }
-
-    &.active {
-      background: $primary-color;
-      color: white;
-    }
-
-    &.warning.active {
-      background: $warning-color;
-    }
-
-    &.danger.active {
-      background: $danger-color;
+      span { color: $text-light; margin-right: 0.5rem; }
+      input {
+        border: none; outline: none; width: 100%; font-size: 0.95rem;
+        &::placeholder { color: $text-light; }
+      }
     }
   }
 }
 
-// ── Search Box ────────────────────────────────────────────────────────────────
-.search-box {
-  display: flex;
-  align-items: center;
+// ── Content Card ──────────────────────────────────────────────────────────────
+.content-card {
   background: white;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  width: 280px;
-
-  span {
-    color: $text-light;
-    margin-right: 0.5rem;
-  }
-
-  input {
-    border: none;
-    outline: none;
-    width: 100%;
-    font-size: 0.95rem;
-
-    &::placeholder {
-      color: $text-light;
-    }
-  }
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: $card-shadow;
+  margin-bottom: 1.5rem;
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
@@ -154,14 +144,9 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   transition: all 0.3s;
   white-space: nowrap;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba($primary-color, 0.3);
-  }
-
-  span {
-    font-size: 20px;
-  }
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba($primary-color,0.3); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  span { font-size: 20px; }
 }
 
 .btn-secondary {
@@ -176,19 +161,8 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   gap: 0.5rem;
   cursor: pointer;
   transition: all 0.3s;
-
-  &:hover {
-    background: $bg-light;
-  }
-}
-
-// ── Content Card ──────────────────────────────────────────────────────────────
-.content-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: $card-shadow;
-  margin-bottom: 1.5rem;
+  &:hover:not(:disabled) { background: $bg-light; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────────
@@ -221,29 +195,16 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
         align-items: center;
         gap: 0.5rem;
         font-weight: 500;
-
-        span {
-          color: $primary-color;
-        }
+        span { color: $primary-color; font-size: 20px; }
       }
-
-      &.amount {
-        font-weight: 500;
-      }
-
-      &.actions {
-        display: flex;
-        gap: 0.5rem;
-      }
+      &.amount { font-weight: 500; }
+      &.actions { display: flex; gap: 0.5rem; }
+      
+      .expired { color: $danger-color; font-weight: 500; }
     }
 
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:hover td {
-      background: $bg-light;
-    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: $bg-light; }
   }
 }
 
@@ -259,18 +220,12 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   align-items: center;
   transition: all 0.2s;
 
-  &:hover {
-    background: $bg-light;
-    color: $primary-color;
-  }
-
-  &.delete:hover {
-    color: $danger-color;
-    background: rgba($danger-color, 0.08);
-  }
+  &:hover:not(:disabled) { background: $bg-light; color: $primary-color; }
+  &.delete:hover:not(:disabled) { color: $danger-color; background: rgba($danger-color,0.08); }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 
-// ── Stock Badges ──────────────────────────────────────────────────────────────
+// ── Badges ────────────────────────────────────────────────────────────────────
 .stock-badge {
   display: inline-flex;
   align-items: center;
@@ -281,68 +236,40 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   font-size: 0.85rem;
   font-weight: 600;
 
-  &.badge-ok {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  &.badge-low {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  &.badge-critical {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  &.badge-out {
-    background: #f3f4f6;
-    color: #6b7280;
-  }
+  &.badge-ok       { background: #d1fae5; color: #065f46; }
+  &.badge-low      { background: #fef3c7; color: #92400e; }
+  &.badge-critical { background: #fee2e2; color: #991b1b; }
+  &.badge-out      { background: #f3f4f6; color: #6b7280; }
 }
 
-// ── Status Chips ──────────────────────────────────────────────────────────────
-.status-chip {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 
-  &.chip-ok {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  &.chip-low {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  &.chip-critical {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  &.chip-out {
-    background: #f3f4f6;
-    color: #6b7280;
-  }
+  &.status-active { background: #d1fae5; color: #065f46; }
+  &.status-expired { background: #fee2e2; color: #991b1b; }
+  &.status-finished { background: #f3f4f6; color: #6b7280; }
 }
 
-// ── Medicine Form ─────────────────────────────────────────────────────────────
+// ── Form ──────────────────────────────────────────────────────────────────────
 .medicine-form {
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto;
 
   .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0;
 
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
+    .form-group.half {
+      flex: 1;
     }
   }
 
@@ -356,11 +283,7 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
       margin-bottom: 0.5rem;
       color: $text-dark;
       font-weight: 500;
-
-      span {
-        color: $primary-color;
-        font-size: 18px;
-      }
+      span { color: $primary-color; font-size: 18px; }
     }
 
     .form-control {
@@ -371,28 +294,56 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
       font-size: 0.95rem;
       color: $text-dark;
       background: white;
-      transition: all 0.3s;
+      transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
+      font-family: inherit;
 
       &:focus {
         outline: none;
         border-color: $primary-color;
         box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
       }
-
-      &::placeholder {
-        color: $text-light;
+      &::placeholder { color: $text-light; }
+      
+      &[type="number"] {
+        -moz-appearance: textfield;
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
       }
     }
 
     select.form-control {
-      cursor: pointer;
-      appearance: auto;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 16px;
     }
 
     textarea.form-control {
       resize: vertical;
-      min-height: 80px;
+      min-height: 70px;
+    }
+
+    .validation-error {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+      color: $danger-color;
+      font-size: 0.85rem;
+      
+      span { font-size: 16px; }
+    }
+
+    .help-text {
+      display: block;
+      margin-top: 0.5rem;
+      color: $text-light;
+      font-size: 0.8rem;
     }
   }
 
@@ -406,7 +357,7 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   }
 }
 
-// ── Medicine Profile (Details View) ───────────────────────────────────────────
+// ── Medicine Profile ───────────────────────────────────────────────────────────
 .medicine-profile {
   display: flex;
   gap: 2rem;
@@ -415,21 +366,11 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   border-bottom: 1px solid $border-color;
   flex-wrap: wrap;
 
-  .profile-avatar {
-    span {
-      font-size: 80px;
-      color: $primary-color;
-    }
-  }
+  .profile-avatar span { font-size: 80px; color: $primary-color; }
 
   .profile-info {
     flex: 1;
-
-    h2 {
-      margin: 0 0 1rem;
-      font-size: 1.8rem;
-      color: $text-dark;
-    }
+    h2 { margin: 0 0 1rem; font-size: 1.8rem; color: $text-dark; }
 
     .info-row {
       display: flex;
@@ -437,36 +378,65 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
       gap: 0.5rem;
       margin-bottom: 0.5rem;
       color: $text-light;
-
-      span:first-child {
-        font-size: 20px;
-        color: $primary-color;
-      }
+      span:first-child { font-size: 20px; color: $primary-color; }
     }
   }
 
   .profile-stats {
     display: flex;
     gap: 2rem;
-
+    
     .stat-item {
       text-align: right;
+      .stat-label { display: block; font-size: 0.85rem; color: $text-light; margin-bottom: 0.25rem; }
+      .stat-value { 
+        font-size: 1.5rem; 
+        font-weight: 600; 
+        color: $text-dark;
+        
+        &.badge-critical, &.badge-low, &.badge-out, &.badge-ok {
+          padding: 0.25rem 1rem;
+          border-radius: 30px;
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+}
 
-      .stat-label {
+// ── Details Grid ─────────────────────────────────────────────────────────────
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .detail-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: $bg-light;
+    border-radius: 8px;
+    border: 1px solid $border-color;
+
+    span:first-child {
+      font-size: 32px;
+      color: $primary-color;
+    }
+
+    div {
+      label {
         display: block;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: $text-light;
         margin-bottom: 0.25rem;
       }
-
-      .stat-value {
-        font-size: 1.5rem;
-        font-weight: 600;
+      p {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 500;
         color: $text-dark;
-
-        &.danger {
-          color: $danger-color;
-        }
       }
     }
   }
@@ -480,21 +450,14 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   font-size: 1.1rem;
   font-weight: 600;
   color: $text-dark;
-  margin-bottom: 1rem;
-
-  span {
-    color: $primary-color;
-    font-size: 22px;
-  }
+  margin: 2rem 0 1rem;
+  
+  &:first-of-type { margin-top: 0; }
+  
+  span { color: $primary-color; font-size: 22px; }
 }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
-.text-danger {
-  color: $danger-color;
-  font-weight: 500;
-}
-
-// ── Loading States ────────────────────────────────────────────────────────────
+// ── Loading ───────────────────────────────────────────────────────────────────
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -504,8 +467,7 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   color: $text-light;
 
   .spinner {
-    width: 40px;
-    height: 40px;
+    width: 40px; height: 40px;
     border: 3px solid $border-color;
     border-top-color: $primary-color;
     border-radius: 50%;
@@ -514,29 +476,9 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   }
 }
 
-.loading-small {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 2rem;
-  color: $text-light;
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .spinner-small {
-    width: 20px;
-    height: 20px;
-    border: 2px solid $border-color;
-    border-top-color: $primary-color;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// ── No Data ───────────────────────────────────────────────────────────────────
+// ── No data ───────────────────────────────────────────────────────────────────
 .no-data {
   display: flex;
   flex-direction: column;
@@ -544,17 +486,8 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   justify-content: center;
   padding: 4rem;
   color: $text-light;
-
-  span {
-    font-size: 64px;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-
-  p {
-    margin: 0 0 1.5rem;
-    font-size: 1.1rem;
-  }
+  span { font-size: 64px; margin-bottom: 1rem; opacity: 0.5; }
+  p { margin: 0 0 1.5rem; font-size: 1.1rem; }
 }
 
 .no-data-small {
@@ -564,49 +497,34 @@ $card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.
   justify-content: center;
   padding: 2rem;
   color: $text-light;
-
-  span {
-    font-size: 48px;
-    margin-bottom: 0.5rem;
-    opacity: 0.5;
-  }
-
-  p {
-    margin: 0;
-  }
+  span { font-size: 48px; margin-bottom: 0.5rem; opacity: 0.5; }
+  p { margin: 0; }
 }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
-
-    .header-right {
-      width: 100%;
-
-      .search-box {
-        width: 100%;
-      }
-
-      .filter-tabs {
-        width: 100%;
-        justify-content: space-between;
-      }
-    }
+    gap: 1rem;
+    .header-right { width: 100%; .search-box { width: 100%; } }
   }
-
+  
   .medicine-profile {
     flex-direction: column;
     align-items: center;
     text-align: center;
-
-    .profile-stats {
-      justify-content: center;
-    }
-
-    .profile-info .info-row {
-      justify-content: center;
-    }
+    .profile-stats { justify-content: center; }
+    .profile-info .info-row { justify-content: center; }
   }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .toast-container { right: 1rem; left: 1rem; top: 1rem; .toast { min-width: unset; width: 100%; } }
 }
