@@ -1,4 +1,4 @@
-// Variables (matching companies)
+// Variables
 $primary-color: #667eea;
 $secondary-color: #764ba2;
 $success-color: #10b981;
@@ -10,7 +10,7 @@ $border-color: #e5e7eb;
 $bg-light: #f9fafb;
 $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 
-// ── Busy overlay ──────────────────────────────────────────────────────────────
+// Busy overlay
 .busy-overlay {
   position: fixed;
   inset: 0;
@@ -30,7 +30,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 .toast-container {
   position: fixed;
   top: 1.5rem; right: 1.5rem;
@@ -61,9 +61,12 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
-@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
 
-// ── Page Header ───────────────────────────────────────────────────────────────
+// Page Header
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -120,7 +123,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
-// ── Content Card ──────────────────────────────────────────────────────────────
+// Content Card
 .content-card {
   background: white;
   border-radius: 12px;
@@ -129,7 +132,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   margin-bottom: 1.5rem;
 }
 
-// ── Buttons ───────────────────────────────────────────────────────────────────
+// Buttons
 .btn-primary {
   background: linear-gradient(135deg, $primary-color, $secondary-color);
   color: white;
@@ -165,7 +168,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────────
+// Table
 .table-container {
   overflow-x: auto;
 
@@ -200,7 +203,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       &.amount { font-weight: 500; }
       &.actions { display: flex; gap: 0.5rem; }
       
-      .expired { color: $danger-color; font-weight: 500; }
+      .expired { color: $danger-color; }
     }
 
     tbody tr:last-child td { border-bottom: none; }
@@ -208,7 +211,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
-// ── Icon Buttons ──────────────────────────────────────────────────────────────
+// Icon Buttons
 .icon-btn {
   background: none;
   border: none;
@@ -225,7 +228,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   &:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 
-// ── Badges ────────────────────────────────────────────────────────────────────
+// Badges
 .stock-badge {
   display: inline-flex;
   align-items: center;
@@ -236,42 +239,16 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   font-size: 0.85rem;
   font-weight: 600;
 
-  &.badge-ok       { background: #d1fae5; color: #065f46; }
-  &.badge-low      { background: #fef3c7; color: #92400e; }
+  &.badge-ok { background: #d1fae5; color: #065f46; }
+  &.badge-low { background: #fef3c7; color: #92400e; }
   &.badge-critical { background: #fee2e2; color: #991b1b; }
-  &.badge-out      { background: #f3f4f6; color: #6b7280; }
+  &.badge-out { background: #f3f4f6; color: #6b7280; }
 }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.2rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-
-  &.status-active { background: #d1fae5; color: #065f46; }
-  &.status-expired { background: #fee2e2; color: #991b1b; }
-  &.status-finished { background: #f3f4f6; color: #6b7280; }
-}
-
-// ── Form ──────────────────────────────────────────────────────────────────────
+// Form
 .medicine-form {
-  max-width: 700px;
+  max-width: 600px;
   margin: 0 auto;
-
-  .form-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0;
-
-    .form-group.half {
-      flex: 1;
-    }
-  }
 
   .form-group {
     margin-bottom: 1.5rem;
@@ -296,14 +273,12 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       background: white;
       transition: border-color 0.2s, box-shadow 0.2s;
       box-sizing: border-box;
-      font-family: inherit;
 
       &:focus {
         outline: none;
         border-color: $primary-color;
         box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
       }
-      &::placeholder { color: $text-light; }
       
       &[type="number"] {
         -moz-appearance: textfield;
@@ -323,11 +298,6 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       background-size: 16px;
     }
 
-    textarea.form-control {
-      resize: vertical;
-      min-height: 70px;
-    }
-
     .validation-error {
       display: flex;
       align-items: center;
@@ -335,15 +305,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       margin-top: 0.5rem;
       color: $danger-color;
       font-size: 0.85rem;
-      
       span { font-size: 16px; }
-    }
-
-    .help-text {
-      display: block;
-      margin-top: 0.5rem;
-      color: $text-light;
-      font-size: 0.8rem;
     }
   }
 
@@ -357,7 +319,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
-// ── Medicine Profile ───────────────────────────────────────────────────────────
+// Medicine Profile
 .medicine-profile {
   display: flex;
   gap: 2rem;
@@ -370,48 +332,29 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 
   .profile-info {
     flex: 1;
-    h2 { margin: 0 0 1rem; font-size: 1.8rem; color: $text-dark; }
-
-    .info-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-      color: $text-light;
-      span:first-child { font-size: 20px; color: $primary-color; }
-    }
+    h2 { margin: 0 0 0.5rem; font-size: 1.8rem; color: $text-dark; }
+    p { margin: 0; color: $text-light; }
   }
 
   .profile-stats {
     display: flex;
     gap: 2rem;
-    
     .stat-item {
       text-align: right;
-      .stat-label { display: block; font-size: 0.85rem; color: $text-light; margin-bottom: 0.25rem; }
-      .stat-value { 
-        font-size: 1.5rem; 
-        font-weight: 600; 
-        color: $text-dark;
-        
-        &.badge-critical, &.badge-low, &.badge-out, &.badge-ok {
-          padding: 0.25rem 1rem;
-          border-radius: 30px;
-          font-size: 1.2rem;
-        }
-      }
+      .stat-label { display: block; font-size: 0.85rem; color: $text-light; }
+      .stat-value { font-size: 1.5rem; font-weight: 600; color: $text-dark; }
     }
   }
 }
 
-// ── Details Grid ─────────────────────────────────────────────────────────────
-.details-grid {
+// Info Grid
+.info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 
-  .detail-card {
+  .info-card {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -420,29 +363,16 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     border-radius: 8px;
     border: 1px solid $border-color;
 
-    span:first-child {
-      font-size: 32px;
-      color: $primary-color;
-    }
+    span { font-size: 32px; color: $primary-color; }
 
     div {
-      label {
-        display: block;
-        font-size: 0.8rem;
-        color: $text-light;
-        margin-bottom: 0.25rem;
-      }
-      p {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 500;
-        color: $text-dark;
-      }
+      label { font-size: 0.8rem; color: $text-light; display: block; }
+      p { margin: 0; font-weight: 500; color: $text-dark; }
     }
   }
 }
 
-// ── Section Title ─────────────────────────────────────────────────────────────
+// Section Title
 .section-title {
   display: flex;
   align-items: center;
@@ -451,18 +381,14 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   font-weight: 600;
   color: $text-dark;
   margin: 2rem 0 1rem;
-  
-  &:first-of-type { margin-top: 0; }
-  
   span { color: $primary-color; font-size: 22px; }
 }
 
-// ── Loading ───────────────────────────────────────────────────────────────────
+// Loading State
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 4rem;
   color: $text-light;
 
@@ -478,30 +404,24 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-// ── No data ───────────────────────────────────────────────────────────────────
-.no-data {
+// No Data
+.no-data, .no-data-small {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 4rem;
   color: $text-light;
   span { font-size: 64px; margin-bottom: 1rem; opacity: 0.5; }
-  p { margin: 0 0 1.5rem; font-size: 1.1rem; }
+  p { margin: 0 0 1rem; }
+  button { margin-top: 1rem; }
 }
 
 .no-data-small {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   padding: 2rem;
-  color: $text-light;
-  span { font-size: 48px; margin-bottom: 0.5rem; opacity: 0.5; }
-  p { margin: 0; }
+  span { font-size: 48px; }
 }
 
-// ── Responsive ────────────────────────────────────────────────────────────────
+// Responsive
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -511,20 +431,12 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   
   .medicine-profile {
     flex-direction: column;
-    align-items: center;
     text-align: center;
     .profile-stats { justify-content: center; }
-    .profile-info .info-row { justify-content: center; }
   }
   
-  .form-row {
-    flex-direction: column;
-    gap: 0;
+  .toast-container { 
+    right: 1rem; left: 1rem; top: 1rem; 
+    .toast { min-width: unset; width: 100%; } 
   }
-  
-  .details-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .toast-container { right: 1rem; left: 1rem; top: 1rem; .toast { min-width: unset; width: 100%; } }
 }

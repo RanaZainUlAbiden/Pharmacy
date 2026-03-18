@@ -1,7 +1,6 @@
 import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
 import { DatabaseService } from '../../services/database.service';
 
 @Component({
@@ -12,14 +11,13 @@ import { DatabaseService } from '../../services/database.service';
   styleUrls: ['./medicines.scss']
 })
 export class MedicinesComponent implements OnInit, OnDestroy {
-
-  // ── View ──────────────────────────────────────────────────────────────────
+  // View states
   viewMode: 'list' | 'details' = 'list';
   formMode: 'add' | 'edit' | null = null;
   showForm = false;
-  formKey = 0; // Forces fresh form on each open
+  formKey = 0;
 
-  // ── Data ──────────────────────────────────────────────────────────────────
+  // Data arrays
   medicines: any[] = [];
   companies: any[] = [];
   categories: any[] = [];
@@ -28,7 +26,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   medicineBatches: any[] = [];
   searchTerm = '';
 
-  // ── Form fields ───────────────────────────────────────────────────────────
+  // Form fields
   formId: number | null = null;
   formName = '';
   formDescription = '';
@@ -38,20 +36,14 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   formSalePrice: number | null = null;
   formMinimumThreshold: number | null = null;
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // UI states
   toast: { message: string; type: 'success' | 'error' } | null = null;
   private toastTimer: any = null;
-
-  // ── Busy state ────────────────────────────────────────────────────────────
   isBusy = false;
   isLoading = false;
-
-  // ── Cleanup flag ──────────────────────────────────────────────────────────
   private isDestroyed = false;
 
   constructor(
-    private router: Router,
-    private route: ActivatedRoute,
     private db: DatabaseService,
     private zone: NgZone,
     private cdr: ChangeDetectorRef
@@ -63,58 +55,65 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.isDestroyed = true;
-    if (this.toastTimer) {
-      clearTimeout(this.toastTimer);
-    }
+    if (this.toastTimer) clearTimeout(this.toastTimer);
   }
 
-  // ── Database helper (ensures zone.run) ────────────────────────────────────
+  // Database helper
   private dbRun(sql: string, params: any[] = [], method = 'all'): Promise<any> {
     return new Promise((resolve, reject) => {
       this.db.query(sql, params, method)
         .then((result: any) => {
           this.zone.run(() => {
-            if (!this.isDestroyed) {
-              resolve(result);
-            }
+            if (!this.isDestroyed) resolve(result);
           });
         })
         .catch((err: any) => {
           this.zone.run(() => {
-            console.error('Database error:', err);
-            if (!this.isDestroyed) {
-              reject(err);
-            }
+            if (!this.isDestroyed) reject(err);
           });
         });
     });
   }
 
-  // ── Load all dropdown data and medicines ──────────────────────────────────
+  // Load all data
   async loadInitialData() {
     if (this.isDestroyed) return;
     this.isLoading = true;
     this.cdr.detectChanges();
 
     try {
-      // Load dropdowns in parallel
-      const [companiesRes, categoriesRes, packingsRes, medicinesRes] = await Promise.all([
+      const [companiesRes, categoriesRes, packingsRes] = await Promise.all([
         this.dbRun('SELECT company_id, company_name FROM company ORDER BY company_name'),
         this.dbRun('SELECT category_id, category_name FROM categories ORDER BY category_name'),
-        this.dbRun('SELECT packing_id, packing_name FROM packing ORDER BY packing_name'),
-        this.loadMedicines() // This sets this.medicines internally
+        this.dbRun('SELECT packing_id, packing_name FROM packing ORDER BY packing_name')
       ]);
 
       if (!this.isDestroyed) {
-        this.companies = Array.isArray(companiesRes) ? companiesRes : [];
-        this.categories = Array.isArray(categoriesRes) ? categoriesRes : [];
-        this.packings = Array.isArray(packingsRes) ? packingsRes : [];
+        this.companies = companiesRes || [];
+        
+        // Remove duplicate categories
+        const uniqueCategories = new Map();
+        (categoriesRes || []).forEach((cat: any) => {
+          if (!uniqueCategories.has(cat.category_name)) {
+            uniqueCategories.set(cat.category_name, cat);
+          }
+        });
+        this.categories = Array.from(uniqueCategories.values());
+        
+        // Remove duplicate packings
+        const uniquePackings = new Map();
+        (packingsRes || []).forEach((p: any) => {
+          if (!uniquePackings.has(p.packing_name)) {
+            uniquePackings.set(p.packing_name, p);
+          }
+        });
+        this.packings = Array.from(uniquePackings.values());
+        
+        await this.loadMedicines();
       }
     } catch (error) {
-      console.error('Failed to load initial data:', error);
-      if (!this.isDestroyed) {
-        this.showToast('Failed to load required data', 'error');
-      }
+      console.error('Failed to load data:', error);
+      this.showToast('Failed to load data', 'error');
     } finally {
       if (!this.isDestroyed) {
         this.isLoading = false;
@@ -126,66 +125,52 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   async loadMedicines() {
     if (this.isDestroyed) return;
     
-    try {
-      const result = await this.dbRun(`
-        SELECT 
-          m.product_id,
-          m.name,
-          m.description,
-          m.sale_price,
-          m.minimum_threshold,
-          c.company_id,
-          c.company_name,
-          cat.category_id,
-          cat.category_name,
-          p.packing_id,
-          p.packing_name,
-          COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
-        FROM medicines m
-        LEFT JOIN company c ON m.company_id = c.company_id
-        LEFT JOIN categories cat ON m.category_id = cat.category_id
-        LEFT JOIN packing p ON m.packing_id = p.packing_id
-        LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-        GROUP BY m.product_id
-        ORDER BY m.name
-      `);
+    const result = await this.dbRun(`
+      SELECT 
+        m.product_id, 
+        m.name, 
+        m.description, 
+        m.sale_price, 
+        m.minimum_threshold,
+        c.company_id, 
+        c.company_name,
+        cat.category_id, 
+        cat.category_name,
+        p.packing_id, 
+        p.packing_name,
+        COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
+      FROM medicines m
+      LEFT JOIN company c ON m.company_id = c.company_id
+      LEFT JOIN categories cat ON m.category_id = cat.category_id
+      LEFT JOIN packing p ON m.packing_id = p.packing_id
+      LEFT JOIN batch_items bi ON m.product_id = bi.product_id
+      GROUP BY m.product_id
+      ORDER BY m.name
+    `);
 
-      if (!this.isDestroyed) {
-        this.medicines = Array.isArray(result) ? result : [];
-      }
-    } catch (error) {
-      console.error('Failed to load medicines:', error);
-      if (!this.isDestroyed) {
-        this.showToast('Failed to load medicines', 'error');
-      }
+    if (!this.isDestroyed) {
+      this.medicines = result || [];
     }
   }
 
   async loadMedicineBatches(medicineId: number) {
     if (this.isDestroyed) return;
 
-    try {
-      const result = await this.dbRun(`
-        SELECT 
-          bi.*,
-          pb.BatchName,
-          pb.purchase_date
-        FROM batch_items bi
-        JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
-        WHERE bi.product_id = ?
-        ORDER BY bi.expiry_date
-      `, [medicineId]);
+    const result = await this.dbRun(`
+      SELECT bi.*, pb.BatchName, pb.purchase_date
+      FROM batch_items bi
+      JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
+      WHERE bi.product_id = ?
+      ORDER BY bi.expiry_date
+    `, [medicineId]);
 
-      if (!this.isDestroyed) {
-        this.medicineBatches = Array.isArray(result) ? result : [];
-        this.cdr.detectChanges();
-      }
-    } catch (error) {
-      console.error('Failed to load batches:', error);
+    if (!this.isDestroyed) {
+      this.medicineBatches = result || [];
+      this.cdr.detectChanges();
     }
   }
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // Toast
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;
     if (this.toastTimer) clearTimeout(this.toastTimer);
@@ -205,9 +190,9 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }, 3000);
   }
 
-  // ── Filtered list ─────────────────────────────────────────────────────────
+  // Filter
   get filteredMedicines(): any[] {
-    if (!this.searchTerm.trim() || this.isDestroyed) return this.medicines;
+    if (!this.searchTerm.trim()) return this.medicines;
     const term = this.searchTerm.toLowerCase();
     return this.medicines.filter(m =>
       m.name.toLowerCase().includes(term) ||
@@ -220,19 +205,16 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     return item.product_id; 
   }
 
-  // ── Form management (fixed version - no race condition) ───────────────────
+  // Form management
   private openForm(mode: 'add' | 'edit') {
     if (this.isDestroyed) return;
-
-    // 1. Hide form
+    
     this.showForm = false;
     this.cdr.detectChanges();
-
-    // 2. Increment key for fresh form
+    
     this.formKey++;
     this.formMode = mode;
-
-    // 3. Use requestAnimationFrame instead of setTimeout for better timing
+    
     requestAnimationFrame(() => {
       this.zone.run(() => {
         if (!this.isDestroyed) {
@@ -254,6 +236,10 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formSalePrice = null;
     this.formMinimumThreshold = null;
     
+    // Make sure we're in list view
+    this.viewMode = 'list';
+    this.selectedMedicine = null;
+    
     this.openForm('add');
   }
 
@@ -268,14 +254,21 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formSalePrice = medicine.sale_price;
     this.formMinimumThreshold = medicine.minimum_threshold || 0;
     
+    // Make sure we're in list view
+    this.viewMode = 'list';
+    this.selectedMedicine = null;
+    
     this.openForm('edit');
   }
 
   showDetails(medicine: any) {
     if (this.isDestroyed) return;
     
+    // Hide any open form
     this.showForm = false;
     this.formMode = null;
+    
+    // Set details view
     this.selectedMedicine = medicine;
     this.medicineBatches = [];
     this.viewMode = 'details';
@@ -286,13 +279,18 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
   cancelForm() {
     if (this.isDestroyed) return;
+    
+    // Simply hide the form and go back to list view
     this.showForm = false;
     this.formMode = null;
+    this.viewMode = 'list';
     this.cdr.detectChanges();
   }
 
   goBack() {
     if (this.isDestroyed) return;
+    
+    // Hide any open form and go back to list view
     this.showForm = false;
     this.formMode = null;
     this.viewMode = 'list';
@@ -301,7 +299,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ── Validation helpers ────────────────────────────────────────────────────
+  // Validation
   private validateForm(): boolean {
     if (!this.formName?.trim()) {
       this.showToast('Medicine name is required', 'error');
@@ -330,16 +328,11 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  // ── ADD ───────────────────────────────────────────────────────────────────
+  // CRUD Operations
   async addMedicine() {
     if (!this.validateForm() || this.isBusy || this.isDestroyed) return;
 
     this.isBusy = true;
-    this.cdr.detectChanges();
-
-    // Close form immediately (optimistic UI)
-    this.showForm = false;
-    this.formMode = null;
     this.cdr.detectChanges();
 
     try {
@@ -362,16 +355,19 @@ export class MedicinesComponent implements OnInit, OnDestroy {
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine added successfully!');
+        
+        // Close form and return to list view
+        this.showForm = false;
+        this.formMode = null;
+        this.viewMode = 'list';
       }
     } catch (error: any) {
-      console.error('Add medicine error:', error);
+      console.error('Add error:', error);
       if (!this.isDestroyed) {
-        // Check for UNIQUE constraint (name + company)
-        if (error?.message?.includes('UNIQUE')) {
-          this.showToast('This medicine already exists for the selected company', 'error');
-        } else {
-          this.showToast('Failed to add medicine', 'error');
-        }
+        const msg = error?.message?.includes('UNIQUE') 
+          ? 'This medicine already exists for the selected company'
+          : 'Failed to add medicine';
+        this.showToast(msg, 'error');
       }
     } finally {
       if (!this.isDestroyed) {
@@ -381,17 +377,11 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── UPDATE ────────────────────────────────────────────────────────────────
   async updateMedicine() {
     if (!this.validateForm() || !this.formId || this.isBusy || this.isDestroyed) return;
 
     const id = this.formId;
     this.isBusy = true;
-    this.cdr.detectChanges();
-
-    // Close form immediately
-    this.showForm = false;
-    this.formMode = null;
     this.cdr.detectChanges();
 
     try {
@@ -416,15 +406,19 @@ export class MedicinesComponent implements OnInit, OnDestroy {
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine updated successfully!');
+        
+        // Close form and return to list view
+        this.showForm = false;
+        this.formMode = null;
+        this.viewMode = 'list';
       }
     } catch (error: any) {
-      console.error('Update medicine error:', error);
+      console.error('Update error:', error);
       if (!this.isDestroyed) {
-        if (error?.message?.includes('UNIQUE')) {
-          this.showToast('This medicine already exists for the selected company', 'error');
-        } else {
-          this.showToast('Failed to update medicine', 'error');
-        }
+        const msg = error?.message?.includes('UNIQUE')
+          ? 'This medicine already exists for the selected company'
+          : 'Failed to update medicine';
+        this.showToast(msg, 'error');
       }
     } finally {
       if (!this.isDestroyed) {
@@ -434,29 +428,53 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── DELETE (FIXED - no more frozen inputs) ───────────────────────────────
+  // FIXED DELETE METHOD - No more frozen inputs!
   deleteMedicine(medicineId: number) {
-    // Run everything in zone
+    // Run in zone to ensure change detection works
     this.zone.run(() => {
-      const confirmed = confirm('Are you sure you want to delete this medicine?\n\nThis will also delete all associated batch records.');
+      // Simple confirmation
+      const confirmed = confirm('Are you sure you want to delete this medicine?');
       if (!confirmed || this.isBusy || this.isDestroyed) return;
 
+      // Set busy state
       this.isBusy = true;
       this.cdr.detectChanges();
 
-      // Optimistic removal
+      // Store backup for potential rollback
       const backup = [...this.medicines];
+      
+      // Optimistically remove from UI
       this.medicines = this.medicines.filter(m => m.product_id !== medicineId);
       this.cdr.detectChanges();
 
-      // Perform deletion
+      // Perform actual delete
       this.dbRun('DELETE FROM medicines WHERE product_id = ?', [medicineId], 'run')
         .then(() => {
           this.zone.run(() => {
             if (!this.isDestroyed) {
               this.showToast('Medicine deleted successfully!');
+              
+              // IMPORTANT: Reset all view states
+              this.showForm = false;
+              this.formMode = null;
+              this.viewMode = 'list';
+              this.selectedMedicine = null;
+              this.medicineBatches = [];
+              
+              // Reset busy state
               this.isBusy = false;
+              
+              // Force multiple change detections to ensure UI updates
               this.cdr.detectChanges();
+              
+              // Extra safety - detect changes again after a tiny delay
+              setTimeout(() => {
+                this.zone.run(() => {
+                  if (!this.isDestroyed) {
+                    this.cdr.detectChanges();
+                  }
+                });
+              }, 10);
             }
           });
         })
@@ -465,35 +483,43 @@ export class MedicinesComponent implements OnInit, OnDestroy {
           
           this.zone.run(() => {
             if (!this.isDestroyed) {
-              // Rollback
+              // Rollback to backup
               this.medicines = backup;
               
-              // Show appropriate error message
-              if (error?.message?.includes('FOREIGN KEY') || error?.message?.includes('constraint failed')) {
-                this.showToast('Cannot delete: This medicine has purchase or sale records', 'error');
-              } else {
-                this.showToast('Failed to delete medicine', 'error');
-              }
+              // Show appropriate error
+              const msg = error?.message?.includes('FOREIGN KEY')
+                ? 'Cannot delete: This medicine has purchase or sale records'
+                : 'Failed to delete medicine';
+              this.showToast(msg, 'error');
               
-              // CRITICAL: Always reset isBusy
+              // IMPORTANT: Reset all view states
+              this.showForm = false;
+              this.formMode = null;
+              this.viewMode = 'list';
+              this.selectedMedicine = null;
+              this.medicineBatches = [];
+              
+              // Reset busy state
               this.isBusy = false;
+              
+              // Force multiple change detections
               this.cdr.detectChanges();
               
-              // Extra safety: force another change detection
+              // Extra safety
               setTimeout(() => {
                 this.zone.run(() => {
                   if (!this.isDestroyed) {
                     this.cdr.detectChanges();
                   }
                 });
-              }, 50);
+              }, 10);
             }
           });
         });
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // Helpers
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency',
@@ -511,17 +537,8 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     return 'badge-ok';
   }
 
-  getBatchStockClass(remaining: number): string {
-    if (remaining === 0) return 'badge-out';
-    if (remaining < 10) return 'badge-critical';
-    if (remaining < 50) return 'badge-low';
-    return 'badge-ok';
-  }
-
   isExpired(expiryDate: string): boolean {
     if (!expiryDate) return false;
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    return expiry < today;
+    return new Date(expiryDate) < new Date();
   }
 }

@@ -6,7 +6,7 @@
   </div>
 </div>
 
-<!-- Busy overlay — blocks all clicks while IPC call is running -->
+<!-- Busy overlay -->
 <div class="busy-overlay" *ngIf="isBusy">
   <div class="busy-spinner"></div>
 </div>
@@ -29,8 +29,7 @@
   <div class="header-right" *ngIf="!showForm && viewMode==='list'">
     <div class="search-box">
       <span class="material-symbols-outlined">search</span>
-      <input type="text" placeholder="Search medicines..."
-             [(ngModel)]="searchTerm" name="searchMedicines">
+      <input type="text" placeholder="Search medicines..." [(ngModel)]="searchTerm" name="searchMedicines">
     </div>
     <button class="btn-primary" (click)="showAddForm()" [disabled]="isBusy">
       <span class="material-symbols-outlined">add</span> New Medicine
@@ -49,7 +48,7 @@
           <th>Company</th>
           <th>Packing</th>
           <th>Sale Price</th>
-          <th>Current Stock</th>
+          <th>Stock</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -84,27 +83,18 @@
   </div>
 </div>
 
-<!-- Form - with proper name attributes and fresh key -->
+<!-- Form -->
 <div class="content-card" *ngIf="showForm" [attr.data-key]="formKey">
-  <form class="medicine-form" #medicineForm="ngForm"
-        (ngSubmit)="formMode==='add' ? addMedicine() : updateMedicine()">
+  <form class="medicine-form" #medicineForm="ngForm" (ngSubmit)="formMode==='add' ? addMedicine() : updateMedicine()">
 
     <!-- Medicine Name -->
     <div class="form-group">
       <label for="medicineName">
         <span class="material-symbols-outlined">medication</span>Medicine Name *
       </label>
-      <input 
-        type="text" 
-        id="medicineName"
-        name="medicineName"
-        class="form-control" 
-        [(ngModel)]="formName" 
-        required
-        minlength="2"
-        #medicineName="ngModel"
-        placeholder="Enter medicine name" 
-        autocomplete="off">
+      <input type="text" id="medicineName" name="medicineName" class="form-control" 
+             [(ngModel)]="formName" required minlength="2" #medicineName="ngModel"
+             placeholder="Enter medicine name" autocomplete="off">
       <div class="validation-error" *ngIf="medicineName.invalid && medicineName.touched">
         <span class="material-symbols-outlined">error</span>
         <span *ngIf="medicineName.errors?.['required']">Medicine name is required</span>
@@ -117,102 +107,71 @@
       <label for="medicineDescription">
         <span class="material-symbols-outlined">description</span>Description
       </label>
-      <textarea 
-        id="medicineDescription"
-        name="medicineDescription"
-        class="form-control" 
-        [(ngModel)]="formDescription"
-        #medicineDescription="ngModel"
-        rows="2" 
-        placeholder="Enter medicine description (optional)"></textarea>
+      <textarea id="medicineDescription" name="medicineDescription" class="form-control" 
+                [(ngModel)]="formDescription" #medicineDescription="ngModel"
+                rows="2" placeholder="Enter medicine description (optional)"></textarea>
     </div>
 
-    <!-- Company (Supplier) -->
-    <div class="form-row">
-      <div class="form-group half">
-        <label for="medicineCompany">
-          <span class="material-symbols-outlined">business</span>Company *
-        </label>
-        <select 
-          id="medicineCompany"
-          name="medicineCompany"
-          class="form-control" 
-          [(ngModel)]="formCompanyId" 
-          required
-          #medicineCompany="ngModel">
-          <option value="" disabled selected>Select company</option>
-          <option *ngFor="let c of companies" [value]="c.company_id">{{ c.company_name }}</option>
-        </select>
-        <div class="validation-error" *ngIf="medicineCompany.invalid && medicineCompany.touched">
-          <span class="material-symbols-outlined">error</span>
-          <span>Please select a company</span>
-        </div>
-      </div>
-
-      <!-- Category -->
-      <div class="form-group half">
-        <label for="medicineCategory">
-          <span class="material-symbols-outlined">category</span>Category *
-        </label>
-        <select 
-          id="medicineCategory"
-          name="medicineCategory"
-          class="form-control" 
-          [(ngModel)]="formCategoryId" 
-          required
-          #medicineCategory="ngModel">
-          <option value="" disabled selected>Select category</option>
-          <option *ngFor="let cat of categories" [value]="cat.category_id">{{ cat.category_name }}</option>
-        </select>
-        <div class="validation-error" *ngIf="medicineCategory.invalid && medicineCategory.touched">
-          <span class="material-symbols-outlined">error</span>
-          <span>Please select a category</span>
-        </div>
+    <!-- Company Dropdown -->
+    <div class="form-group">
+      <label for="medicineCompany">
+        <span class="material-symbols-outlined">business</span>Company *
+      </label>
+      <select id="medicineCompany" name="medicineCompany" class="form-control" 
+              [(ngModel)]="formCompanyId" required #medicineCompany="ngModel">
+        <option value="" disabled selected>Select company</option>
+        <option *ngFor="let c of companies" [value]="c.company_id">{{ c.company_name }}</option>
+      </select>
+      <div class="validation-error" *ngIf="medicineCompany.invalid && medicineCompany.touched">
+        <span class="material-symbols-outlined">error</span>
+        <span>Please select a company</span>
       </div>
     </div>
 
-    <!-- Packing and Sale Price -->
-    <div class="form-row">
-      <div class="form-group half">
-        <label for="medicinePacking">
-          <span class="material-symbols-outlined">inventory</span>Packing *
-        </label>
-        <select 
-          id="medicinePacking"
-          name="medicinePacking"
-          class="form-control" 
-          [(ngModel)]="formPackingId" 
-          required
-          #medicinePacking="ngModel">
-          <option value="" disabled selected>Select packing</option>
-          <option *ngFor="let p of packings" [value]="p.packing_id">{{ p.packing_name }}</option>
-        </select>
-        <div class="validation-error" *ngIf="medicinePacking.invalid && medicinePacking.touched">
-          <span class="material-symbols-outlined">error</span>
-          <span>Please select packing type</span>
-        </div>
+    <!-- Category Dropdown -->
+    <div class="form-group">
+      <label for="medicineCategory">
+        <span class="material-symbols-outlined">category</span>Category *
+      </label>
+      <select id="medicineCategory" name="medicineCategory" class="form-control" 
+              [(ngModel)]="formCategoryId" required #medicineCategory="ngModel">
+        <option value="" disabled selected>Select category</option>
+        <option *ngFor="let cat of categories" [value]="cat.category_id">{{ cat.category_name }}</option>
+      </select>
+      <div class="validation-error" *ngIf="medicineCategory.invalid && medicineCategory.touched">
+        <span class="material-symbols-outlined">error</span>
+        <span>Please select a category</span>
       </div>
+    </div>
 
-      <div class="form-group half">
-        <label for="medicineSalePrice">
-          <span class="material-symbols-outlined">payments</span>Sale Price (PKR) *
-        </label>
-        <input 
-          type="number"
-          id="medicineSalePrice"
-          name="medicineSalePrice"
-          class="form-control" 
-          [(ngModel)]="formSalePrice" 
-          required
-          min="1"
-          step="0.01"
-          #medicineSalePrice="ngModel"
-          placeholder="Enter sale price">
-        <div class="validation-error" *ngIf="medicineSalePrice.invalid && medicineSalePrice.touched">
-          <span class="material-symbols-outlined">error</span>
-          <span *ngIf="medicineSalePrice.errors?.['required']">Sale price is required</span>
-          <span *ngIf="medicineSalePrice.errors?.['min']">Price must be greater than 0</span>
-        </div>
+    <!-- Packing Dropdown -->
+    <div class="form-group">
+      <label for="medicinePacking">
+        <span class="material-symbols-outlined">inventory</span>Packing *
+      </label>
+      <select id="medicinePacking" name="medicinePacking" class="form-control" 
+              [(ngModel)]="formPackingId" required #medicinePacking="ngModel">
+        <option value="" disabled selected>Select packing</option>
+        <option *ngFor="let p of packings" [value]="p.packing_id">{{ p.packing_name }}</option>
+      </select>
+      <div class="validation-error" *ngIf="medicinePacking.invalid && medicinePacking.touched">
+        <span class="material-symbols-outlined">error</span>
+        <span>Please select packing type</span>
+      </div>
+    </div>
+
+    <!-- Sale Price -->
+    <div class="form-group">
+      <label for="medicineSalePrice">
+        <span class="material-symbols-outlined">payments</span>Sale Price (PKR) *
+      </label>
+      <input type="number" id="medicineSalePrice" name="medicineSalePrice" class="form-control" 
+             [(ngModel)]="formSalePrice" required min="1" step="0.01" #medicineSalePrice="ngModel"
+             placeholder="Enter sale price">
+      <div class="validation-error" *ngIf="medicineSalePrice.invalid && medicineSalePrice.touched">
+        <span class="material-symbols-outlined">error</span>
+        <span *ngIf="medicineSalePrice.errors?.['required']">Sale price is required</span>
+        <span *ngIf="medicineSalePrice.errors?.['min']">Price must be greater than 0</span>
       </div>
     </div>
 
@@ -221,23 +180,14 @@
       <label for="medicineThreshold">
         <span class="material-symbols-outlined">warning</span>Minimum Stock Threshold *
       </label>
-      <input 
-        type="number"
-        id="medicineThreshold"
-        name="medicineThreshold"
-        class="form-control" 
-        [(ngModel)]="formMinimumThreshold" 
-        required
-        min="0"
-        step="1"
-        #medicineThreshold="ngModel"
-        placeholder="Enter minimum stock level (e.g., 10)">
+      <input type="number" id="medicineThreshold" name="medicineThreshold" class="form-control" 
+             [(ngModel)]="formMinimumThreshold" required min="0" step="1" #medicineThreshold="ngModel"
+             placeholder="Enter minimum stock level">
       <div class="validation-error" *ngIf="medicineThreshold.invalid && medicineThreshold.touched">
         <span class="material-symbols-outlined">error</span>
         <span *ngIf="medicineThreshold.errors?.['required']">Threshold is required</span>
         <span *ngIf="medicineThreshold.errors?.['min']">Threshold cannot be negative</span>
       </div>
-      <small class="help-text">You'll be alerted when stock falls below this level</small>
     </div>
 
     <div class="form-actions">
@@ -260,17 +210,12 @@
     </div>
     <div class="profile-info">
       <h2>{{ selectedMedicine.name }}</h2>
-      <div class="info-row">
-        <span class="material-symbols-outlined">description</span>
-        <span>{{ selectedMedicine.description || 'No description' }}</span>
-      </div>
+      <p>{{ selectedMedicine.description || 'No description' }}</p>
     </div>
     <div class="profile-stats">
       <div class="stat-item">
         <span class="stat-label">Current Stock</span>
-        <span class="stat-value" [class]="getStockClass(selectedMedicine.current_stock, selectedMedicine.minimum_threshold)">
-          {{ selectedMedicine.current_stock ?? 0 }}
-        </span>
+        <span class="stat-value">{{ selectedMedicine.current_stock ?? 0 }}</span>
       </div>
       <div class="stat-item">
         <span class="stat-label">Sale Price</span>
@@ -279,38 +224,38 @@
     </div>
   </div>
 
-  <div class="details-grid">
-    <div class="detail-card">
+  <div class="info-grid">
+    <div class="info-card">
       <span class="material-symbols-outlined">business</span>
       <div>
         <label>Company</label>
         <p>{{ selectedMedicine.company_name || '—' }}</p>
       </div>
     </div>
-    <div class="detail-card">
+    <div class="info-card">
       <span class="material-symbols-outlined">category</span>
       <div>
         <label>Category</label>
         <p>{{ selectedMedicine.category_name || '—' }}</p>
       </div>
     </div>
-    <div class="detail-card">
+    <div class="info-card">
       <span class="material-symbols-outlined">inventory</span>
       <div>
         <label>Packing</label>
         <p>{{ selectedMedicine.packing_name || '—' }}</p>
       </div>
     </div>
-    <div class="detail-card">
+    <div class="info-card">
       <span class="material-symbols-outlined">warning</span>
       <div>
-        <label>Minimum Threshold</label>
+        <label>Min Threshold</label>
         <p>{{ selectedMedicine.minimum_threshold || 0 }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Batch History Section -->
+  <!-- Batches Section -->
   <div class="section-title">
     <span class="material-symbols-outlined">history</span>
     Purchase Batches
@@ -326,28 +271,16 @@
           <th>Purchase Price</th>
           <th>Quantity</th>
           <th>Remaining</th>
-          <th>Status</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let b of medicineBatches">
           <td>{{ b.BatchName || '—' }}</td>
-          <td>{{ b.purchase_date | date:'dd/MM/yyyy' }}</td>
-          <td [class.expired]="isExpired(b.expiry_date)">{{ b.expiry_date | date:'dd/MM/yyyy' }}</td>
+          <td>{{ b.purchase_date | date }}</td>
+          <td [class.expired]="isExpired(b.expiry_date)">{{ b.expiry_date | date }}</td>
           <td class="amount">{{ formatCurrency(b.purchase_price) }}</td>
           <td>{{ b.quantity_received }}</td>
-          <td>
-            <span class="stock-badge" [class]="getBatchStockClass(b.quantity_remaining)">
-              {{ b.quantity_remaining }}
-            </span>
-          </td>
-          <td>
-            <span class="status-badge" [class.status-expired]="isExpired(b.expiry_date)" 
-                  [class.status-active]="!isExpired(b.expiry_date) && b.quantity_remaining > 0"
-                  [class.status-finished]="b.quantity_remaining === 0">
-              {{ b.quantity_remaining === 0 ? 'Finished' : (isExpired(b.expiry_date) ? 'Expired' : 'Active') }}
-            </span>
-          </td>
+          <td>{{ b.quantity_remaining }}</td>
         </tr>
       </tbody>
     </table>
@@ -363,13 +296,13 @@
   <div class="no-data">
     <span class="material-symbols-outlined">medication</span>
     <p>No medicines found</p>
-    <button class="btn-primary" (click)="showAddForm()">Add Your First Medicine</button>
+    <button class="btn-primary" (click)="showAddForm()">Add First Medicine</button>
   </div>
 </ng-template>
 
 <ng-template #noBatchesTpl>
   <div class="no-data-small">
     <span class="material-symbols-outlined">history</span>
-    <p>No purchase batches found for this medicine</p>
+    <p>No purchase batches found</p>
   </div>
 </ng-template>
