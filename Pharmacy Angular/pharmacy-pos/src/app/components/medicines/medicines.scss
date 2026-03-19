@@ -440,3 +440,67 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     .toast { min-width: unset; width: 100%; } 
   }
 }
+// ✅ Custom Confirm Dialog
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+
+  .confirm-box {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+
+    .confirm-icon {
+      font-size: 3rem;
+      color: #ef4444;
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+
+      .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        &:hover { background: #e5e7eb; }
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+        &:hover { background: #dc2626; }
+      }
+    }
+  }
+}

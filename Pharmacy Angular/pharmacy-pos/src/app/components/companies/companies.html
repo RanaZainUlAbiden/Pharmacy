@@ -1,3 +1,19 @@
+<!-- ✅ Custom Confirm Dialog -->
+<div class="confirm-overlay" *ngIf="showConfirmDialog">
+  <div class="confirm-box">
+    <span class="material-symbols-outlined confirm-icon">delete_forever</span>
+    <p>{{ confirmMessage }}</p>
+    <div class="confirm-actions">
+      <button class="btn-secondary" (click)="onConfirmNo()">
+        <span class="material-symbols-outlined">close</span> Cancel
+      </button>
+      <button class="btn-danger" (click)="onConfirmYes()">
+        <span class="material-symbols-outlined">delete</span> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-container" *ngIf="toast">
   <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
@@ -6,7 +22,7 @@
   </div>
 </div>
 
-<!-- Busy overlay — blocks all clicks while IPC call is running -->
+<!-- Busy overlay -->
 <div class="busy-overlay" *ngIf="isBusy">
   <div class="busy-spinner"></div>
 </div>
@@ -73,47 +89,76 @@
   </div>
 </div>
 
-<!-- Form
-     [attr.data-key]="formKey" is the critical fix:
-     Every time formKey changes, Angular sees a NEW element and
-     creates a completely fresh ngForm + fresh input instances.
-     No stale model state can survive across operations. -->
+<!-- Form -->
 <div class="content-card" *ngIf="showForm" [attr.data-key]="formKey">
   <form class="company-form" #f="ngForm"
         (ngSubmit)="formMode==='add' ? addCompany() : updateCompany()">
 
+    <!-- Company Name -->
     <div class="form-group">
       <label for="fn">
         <span class="material-symbols-outlined">business</span>Company Name *
       </label>
       <input id="fn" name="fn" type="text" class="form-control"
-             [(ngModel)]="formName" required
-             placeholder="Enter company name" autocomplete="off">
+             [(ngModel)]="formName"
+             placeholder="Enter company name"
+             autocomplete="off"
+             (blur)="validateName()"
+             [class.input-error]="nameError">
+      <div class="validation-error" *ngIf="nameError">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ nameError }}</span>
+      </div>
     </div>
 
+    <!-- Contact -->
     <div class="form-group">
       <label for="fc">
         <span class="material-symbols-outlined">call</span>Contact Number *
       </label>
       <input id="fc" name="fc" type="tel" class="form-control"
-             [(ngModel)]="formContact" required
-             placeholder="03XX-XXXXXXX" autocomplete="off">
+             [(ngModel)]="formContact"
+             placeholder="03XX-XXXXXXX"
+             autocomplete="off"
+             (blur)="validateContact()"
+             [class.input-error]="contactError"
+             maxlength="14">
+      <div class="validation-error" *ngIf="contactError">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ contactError }}</span>
+      </div>
+      <div class="field-hint" *ngIf="!contactError">
+        <span class="material-symbols-outlined">info</span>
+        Format: 03XX-XXXXXXX or 03XXXXXXXXX
+      </div>
     </div>
 
+    <!-- Address -->
     <div class="form-group">
       <label for="fa">
         <span class="material-symbols-outlined">location_on</span>Address *
       </label>
       <textarea id="fa" name="fa" class="form-control"
-                [(ngModel)]="formAddress" required
-                rows="3" placeholder="Enter company address"></textarea>
+                [(ngModel)]="formAddress"
+                rows="3"
+                placeholder="Enter company address"
+                (blur)="validateAddress()"
+                [class.input-error]="addressError"
+                maxlength="255"></textarea>
+      <div class="validation-error" *ngIf="addressError">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ addressError }}</span>
+      </div>
+      <div class="char-count" *ngIf="formAddress">
+        {{ formAddress.length }}/255
+      </div>
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn-secondary" (click)="cancelForm()">
+      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isBusy">
         <span class="material-symbols-outlined">close</span>Cancel
       </button>
-      <button type="submit" class="btn-primary">
+      <button type="submit" class="btn-primary" [disabled]="isBusy || formInvalid">
         <span class="material-symbols-outlined">{{ formMode==='add' ? 'save' : 'update' }}</span>
         {{ formMode==='add' ? 'Save Company' : 'Update Company' }}
       </button>
