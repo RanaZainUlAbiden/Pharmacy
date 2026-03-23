@@ -1,0 +1,257 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Busy overlay -->
+<div class="busy-overlay" *ngIf="isBusy">
+  <div class="busy-spinner"></div>
+</div>
+
+<div class="sales-container">
+  <!-- Left Panel - Search & Cart -->
+  <div class="sales-left">
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-header">
+        <h2>
+          <span class="material-symbols-outlined">search</span>
+          Search Medicine
+        </h2>
+        <div class="barcode-hint">
+          <span class="material-symbols-outlined">qr_code_scanner</span>
+          <span>Use barcode scanner</span>
+        </div>
+      </div>
+      
+      <div class="search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input 
+          #searchInput
+          type="text" 
+          placeholder="Type medicine name or scan barcode..." 
+          [(ngModel)]="searchQuery"
+          (input)="searchMedicines()"
+          (keyup.enter)="searchResults.length === 1 ? addToCart(searchResults[0]) : null"
+          autofocus>
+      </div>
+      
+      <!-- Barcode Input (hidden, for scanner) -->
+      <input 
+        type="text" 
+        class="barcode-input" 
+        [(ngModel)]="barcodeInput"
+        (keyup.enter)="onBarcodeScan()"
+        placeholder="Scan barcode here"
+        style="position: absolute; opacity: 0; pointer-events: none;">
+      
+      <!-- Search Results -->
+      <div class="search-results" *ngIf="searchResults.length > 0">
+        <div *ngFor="let item of searchResults" class="search-item" (click)="addToCart(item)">
+          <div class="item-info">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-price">{{ formatCurrency(item.sale_price) }}</span>
+          </div>
+          <div class="item-stock" [class.low-stock]="item.current_stock <= 10">
+            Stock: {{ item.current_stock }}
+          </div>
+        </div>
+      </div>
+      
+      <div class="search-loading" *ngIf="isSearching">
+        <div class="spinner-small"></div>
+        <span>Searching...</span>
+      </div>
+    </div>
+
+    <!-- Cart Section -->
+    <div class="cart-section">
+      <div class="cart-header">
+        <h2>
+          <span class="material-symbols-outlined">shopping_cart</span>
+          Current Sale
+        </h2>
+        <button class="clear-cart" (click)="clearCart()" [disabled]="cart.length === 0">
+          <span class="material-symbols-outlined">delete_sweep</span>
+          Clear
+        </button>
+      </div>
+      
+      <div class="cart-items" *ngIf="cart.length > 0; else emptyCart">
+        <div *ngFor="let item of cart" class="cart-item">
+          <div class="item-details">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-price">{{ formatCurrency(item.price) }} each</div>
+          </div>
+          <div class="item-actions">
+            <button class="qty-btn" (click)="updateQuantity(item, -1)">-</button>
+            <span class="qty">{{ item.quantity }}</span>
+            <button class="qty-btn" (click)="updateQuantity(item, 1)">+</button>
+            <button class="remove-btn" (click)="removeFromCart(item)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+            <div class="item-total">{{ formatCurrency(item.total) }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <ng-template #emptyCart>
+        <div class="empty-cart">
+          <span class="material-symbols-outlined">shopping_cart</span>
+          <p>Cart is empty</p>
+          <p class="hint">Search and add medicines to start sale</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Right Panel - Customer & Totals -->
+  <div class="sales-right">
+    <!-- Customer Section -->
+    <div class="customer-section">
+      <h3>
+        <span class="material-symbols-outlined">person</span>
+        Customer
+      </h3>
+      
+      <div class="customer-select" *ngIf="!selectedCustomer">
+        <div class="customer-dropdown">
+          <input 
+            type="text" 
+            placeholder="Search customer..." 
+            [(ngModel)]="customerSearchTerm"
+            (focus)="showCustomerDropdown = true"
+            (blur)="hideCustomerDropdown()">
+          <div class="dropdown-list" *ngIf="showCustomerDropdown && filteredCustomers.length > 0">
+            <div *ngFor="let c of filteredCustomers" (click)="selectCustomer(c)">
+              <span class="customer-name">{{ c.full_name }}</span>
+              <span class="customer-phone">{{ c.phone }}</span>
+            </div>
+          </div>
+        </div>
+        <button class="walkin-btn" (click)="selectCustomer({ customer_id: 1, full_name: 'Walk-in Customer' })">
+          Walk-in
+        </button>
+      </div>
+      
+      <div class="customer-selected" *ngIf="selectedCustomer">
+        <div class="selected-info">
+          <span class="material-symbols-outlined">account_circle</span>
+          <div>
+            <strong>{{ selectedCustomer.full_name }}</strong>
+            <span>{{ selectedCustomer.phone }}</span>
+          </div>
+        </div>
+        <button class="change-customer" (click)="selectedCustomer = null; selectedCustomerId = null">
+          Change
+        </button>
+      </div>
+    </div>
+
+    <!-- Totals Section -->
+    <div class="totals-section">
+      <div class="total-row">
+        <span>Subtotal</span>
+        <span class="amount">{{ formatCurrency(cartSubtotal) }}</span>
+      </div>
+      <div class="total-row">
+        <span>Tax (17%)</span>
+        <span class="amount">{{ formatCurrency(cartTax) }}</span>
+      </div>
+      <div class="total-row total">
+        <span>Total</span>
+        <span class="amount">{{ formatCurrency(cartTotal) }}</span>
+      </div>
+    </div>
+
+    <!-- Checkout Button -->
+    <button class="checkout-btn" (click)="openPaymentDialog()" [disabled]="cart.length === 0">
+      <span class="material-symbols-outlined">payments</span>
+      Proceed to Payment
+    </button>
+  </div>
+</div>
+
+<!-- Payment Dialog -->
+<div class="modal-overlay" *ngIf="showPaymentDialog" (click)="showPaymentDialog = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Payment</h3>
+      <button class="close-modal" (click)="showPaymentDialog = false">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="payment-details">
+        <div class="detail-row">
+          <span>Total Amount:</span>
+          <span class="amount">{{ formatCurrency(cartTotal) }}</span>
+        </div>
+        
+        <div class="detail-row">
+          <span>Payment Method:</span>
+          <div class="payment-methods">
+            <button class="method-btn" [class.active]="paymentMethod === 'cash'" (click)="paymentMethod = 'cash'">
+              <span class="material-symbols-outlined">cash</span>
+              Cash
+            </button>
+            <button class="method-btn" [class.active]="paymentMethod === 'card'" (click)="paymentMethod = 'card'">
+              <span class="material-symbols-outlined">credit_card</span>
+              Card
+            </button>
+            <button class="method-btn" [class.active]="paymentMethod === 'credit'" (click)="paymentMethod = 'credit'">
+              <span class="material-symbols-outlined">account_balance</span>
+              Credit
+            </button>
+          </div>
+        </div>
+        
+        <div class="detail-row">
+          <span>Amount Received:</span>
+          <input type="number" class="amount-input" [(ngModel)]="paymentAmount" (input)="calculateChange()" step="1">
+        </div>
+        
+        <div class="detail-row">
+          <span>Change:</span>
+          <span class="amount change">{{ formatCurrency(change) }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="showPaymentDialog = false">Cancel</button>
+      <button class="btn-primary" (click)="processPayment()" [disabled]="paymentAmount < cartTotal">
+        <span class="material-symbols-outlined">check_circle</span>
+        Complete Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Success Dialog -->
+<div class="modal-overlay" *ngIf="showSuccessDialog">
+  <div class="modal-content success-modal" (click)="$event.stopPropagation()">
+    <div class="success-icon">
+      <span class="material-symbols-outlined">check_circle</span>
+    </div>
+    
+    <h3>Sale Completed!</h3>
+    <p>Invoice #{{ currentSale?.invoice_number }}</p>
+    <p class="sale-total">Total: {{ formatCurrency(currentSale?.total) }}</p>
+    
+    <div class="action-buttons">
+      <button class="btn-secondary" (click)="printReceipt()">
+        <span class="material-symbols-outlined">print</span>
+        Print Receipt
+      </button>
+      <button class="btn-primary" (click)="newSale()">
+        <span class="material-symbols-outlined">add</span>
+        New Sale
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,365 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>
+      <span class="material-symbols-outlined">assessment</span>
+      Reports
+    </h1>
+  </div>
+  <div class="header-right">
+    <button class="btn-secondary" (click)="exportExcel()" [disabled]="isLoading">
+      <span class="material-symbols-outlined">table_chart</span>
+      Export Excel
+    </button>
+    <button class="btn-primary" (click)="exportPDF()" [disabled]="isLoading">
+      <span class="material-symbols-outlined">picture_as_pdf</span>
+      Export PDF
+    </button>
+  </div>
+</div>
+
+<!-- Report Type Tabs -->
+<div class="report-tabs">
+  <button class="tab" [class.active]="reportType === 'sales'" (click)="reportType = 'sales'; loadReport()">
+    <span class="material-symbols-outlined">point_of_sale</span>
+    Sales Report
+  </button>
+  <button class="tab" [class.active]="reportType === 'stock'" (click)="reportType = 'stock'; loadReport()">
+    <span class="material-symbols-outlined">inventory</span>
+    Stock Report
+  </button>
+  <button class="tab" [class.active]="reportType === 'expiry'" (click)="reportType = 'expiry'; loadReport()">
+    <span class="material-symbols-outlined">event_busy</span>
+    Expiry Report
+  </button>
+  <button class="tab" [class.active]="reportType === 'customer'" (click)="reportType = 'customer'; loadReport()">
+    <span class="material-symbols-outlined">people</span>
+    Customer Report
+  </button>
+</div>
+
+<!-- Filters -->
+<div class="filters-card">
+  <div class="filters-header">
+    <span class="material-symbols-outlined">filter_alt</span>
+    <h3>Filters</h3>
+  </div>
+  
+  <div class="filters-grid">
+    <!-- Date Range -->
+    <div class="filter-group">
+      <label>Date Range</label>
+      <div class="date-range">
+        <input type="date" [(ngModel)]="dateRange.start" (change)="loadReport()">
+        <span>to</span>
+        <input type="date" [(ngModel)]="dateRange.end" (change)="loadReport()">
+      </div>
+    </div>
+    
+    <!-- Period Presets -->
+    <div class="filter-group">
+      <label>Quick Select</label>
+      <div class="period-buttons">
+        <button class="period-btn" [class.active]="periodPreset === 'today'" (click)="setPeriod('today')">Today</button>
+        <button class="period-btn" [class.active]="periodPreset === 'yesterday'" (click)="setPeriod('yesterday')">Yesterday</button>
+        <button class="period-btn" [class.active]="periodPreset === 'week'" (click)="setPeriod('week')">Week</button>
+        <button class="period-btn" [class.active]="periodPreset === 'month'" (click)="setPeriod('month')">Month</button>
+        <button class="period-btn" [class.active]="periodPreset === 'year'" (click)="setPeriod('year')">Year</button>
+      </div>
+    </div>
+    
+    <!-- Customer Filter (for Sales Report) -->
+    <div class="filter-group" *ngIf="reportType === 'sales'">
+      <label>Customer</label>
+      <select class="filter-select" [(ngModel)]="selectedCustomerId" (change)="loadReport()">
+        <option [value]="null">All Customers</option>
+        <option *ngFor="let c of customers" [value]="c.customer_id">{{ c.full_name }}</option>
+      </select>
+    </div>
+    
+    <!-- Medicine Filter (for Stock Report) -->
+    <div class="filter-group" *ngIf="reportType === 'stock'">
+      <label>Medicine</label>
+      <select class="filter-select" [(ngModel)]="selectedMedicineId" (change)="loadReport()">
+        <option [value]="null">All Medicines</option>
+        <option *ngFor="let m of medicines" [value]="m.product_id">{{ m.name }}</option>
+      </select>
+    </div>
+    
+    <!-- Company Filter (for Stock Report) -->
+    <div class="filter-group" *ngIf="reportType === 'stock'">
+      <label>Company</label>
+      <select class="filter-select" [(ngModel)]="selectedCompanyId" (change)="loadReport()">
+        <option [value]="null">All Companies</option>
+        <option *ngFor="let comp of companies" [value]="comp.company_id">{{ comp.company_name }}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading report data...</p>
+</div>
+
+<!-- ==================== SALES REPORT ==================== -->
+<div class="report-content" *ngIf="!isLoading && reportType === 'sales'">
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">payments</span>
+      </div>
+      <div class="summary-info">
+        <label>Total Sales</label>
+        <h2>{{ formatCurrency(summary.totalSales) }}</h2>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">receipt</span>
+      </div>
+      <div class="summary-info">
+        <label>Total Transactions</label>
+        <h2>{{ summary.totalTransactions }}</h2>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">trending_up</span>
+      </div>
+      <div class="summary-info">
+        <label>Average Sale</label>
+        <h2>{{ formatCurrency(summary.averageSale) }}</h2>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">medication</span>
+      </div>
+      <div class="summary-info">
+        <label>Top Product</label>
+        <h2>{{ summary.topProduct }}</h2>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Sales Table -->
+  <div class="data-card">
+    <div class="card-header">
+      <h3>Sales Transactions</h3>
+      <span class="record-count">{{ salesData.length }} records</span>
+    </div>
+    <div class="table-container">
+      <table *ngIf="salesData.length > 0; else noDataTpl">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Due</th>
+          </thead>
+        <tbody>
+          <tr *ngFor="let sale of salesData">
+            <td>#{{ sale.sale_id }}</td>
+            <td>{{ formatDate(sale.sale_date) }}</td>
+            <td>{{ sale.customer_name || 'Walk-in' }}</td>
+            <td>{{ sale.item_count || 0 }}</td>
+            <td class="amount">{{ formatCurrency(sale.total_amount) }}</td>
+            <td class="amount">{{ formatCurrency(sale.paid_amount) }}</td>
+            <td class="amount due">{{ formatCurrency(sale.due_amount) }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="4"><strong>TOTAL</strong></td>
+            <td class="amount"><strong>{{ formatCurrency(summary.totalSales) }}</strong></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== STOCK REPORT ==================== -->
+<div class="report-content" *ngIf="!isLoading && reportType === 'stock'">
+  <div class="data-card">
+    <div class="card-header">
+      <h3>Current Stock Status</h3>
+      <span class="record-count">{{ stockData.length }} medicines</span>
+    </div>
+    <div class="table-container">
+      <table *ngIf="stockData.length > 0; else noDataTpl">
+        <thead>
+          <tr>
+            <th>Medicine</th>
+            <th>Company</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Min Threshold</th>
+            <th>Status</th>
+            <th>Next Expiry</th>
+          </thead>
+        <tbody>
+          <tr *ngFor="let item of stockData">
+            <td class="medicine-name">
+              <span class="material-symbols-outlined">medication</span>
+              {{ item.name }}
+            </td>
+            <td>{{ item.company_name || '—' }}</td>
+            <td>{{ item.category_name || '—' }}</td>
+            <td class="amount">{{ item.current_stock }}</td>
+            <td class="amount">{{ item.minimum_threshold || 0 }}</td>
+            <td>
+              <span class="status-badge" [class]="getStatusClass(item.stock_status)">
+                {{ item.stock_status }}
+              </span>
+            </td>
+            <td>{{ formatDate(item.next_expiry) }}</td>
+          </tr>
+        </tbody>
+       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EXPIRY REPORT ==================== -->
+<div class="report-content" *ngIf="!isLoading && reportType === 'expiry'">
+  <div class="alert-banner" *ngIf="expiryData.length > 0">
+    <span class="material-symbols-outlined">warning</span>
+    <span>{{ expiryData.length }} batches expiring in next 90 days</span>
+  </div>
+  
+  <div class="data-card">
+    <div class="card-header">
+      <h3>Expiring Items</h3>
+      <span class="record-count">{{ expiryData.length }} batches</span>
+    </div>
+    <div class="table-container">
+      <table *ngIf="expiryData.length > 0; else noDataTpl">
+        <thead>
+          <tr>
+            <th>Medicine</th>
+            <th>Batch</th>
+            <th>Company</th>
+            <th>Expiry Date</th>
+            <th>Days Left</th>
+            <th>Quantity</th>
+            <th>Purchase Price</th>
+            <th>Sale Price</th>
+          </thead>
+        <tbody>
+          <tr *ngFor="let item of expiryData">
+            <td class="medicine-name">
+              <span class="material-symbols-outlined">medication</span>
+              {{ item.medicine_name }}
+            </td>
+            <td>{{ item.BatchName }}</td>
+            <td>{{ item.company_name }}</td>
+            <td [class]="getExpiryClass(item.days_to_expiry)">{{ formatDate(item.expiry_date) }}</td>
+            <td [class]="getExpiryClass(item.days_to_expiry)">{{ item.days_to_expiry }} days</td>
+            <td class="amount">{{ item.quantity_remaining }}</td>
+            <td class="amount">{{ formatCurrency(item.purchase_price) }}</td>
+            <td class="amount">{{ formatCurrency(item.sale_price) }}</td>
+          </tr>
+        </tbody>
+       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CUSTOMER REPORT ==================== -->
+<div class="report-content" *ngIf="!isLoading && reportType === 'customer'">
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">people</span>
+      </div>
+      <div class="summary-info">
+        <label>Total Customers</label>
+        <h2>{{ customerData.length }}</h2>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">payments</span>
+      </div>
+      <div class="summary-info">
+        <label>Total Sales</label>
+        <h2>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_spent, 0)) }}</h2>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">
+        <span class="material-symbols-outlined">account_balance</span>
+      </div>
+      <div class="summary-info">
+        <label>Total Due</label>
+        <h2 class="due">{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_due, 0)) }}</h2>
+      </div>
+    </div>
+  </div>
+  
+  <div class="data-card">
+    <div class="card-header">
+      <h3>Customer Ledger</h3>
+      <span class="record-count">{{ customerData.length }} customers</span>
+    </div>
+    <div class="table-container">
+      <table *ngIf="customerData.length > 0; else noDataTpl">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Purchases</th>
+            <th>Total Spent</th>
+            <th>Due Amount</th>
+            <th>Last Purchase</th>
+          </thead>
+        <tbody>
+          <tr *ngFor="let customer of customerData">
+            <td class="customer-name">
+              <span class="material-symbols-outlined">account_circle</span>
+              {{ customer.full_name }}
+            </td>
+            <td>{{ customer.phone || '—' }}</td>
+            <td>{{ customer.total_purchases || 0 }}</td>
+            <td class="amount">{{ formatCurrency(customer.total_spent) }}</td>
+            <td class="amount due">{{ formatCurrency(customer.total_due) }}</td>
+            <td>{{ formatDate(customer.last_purchase) }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="3"><strong>TOTAL</strong></td>
+            <td class="amount"><strong>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_spent, 0)) }}</strong></td>
+            <td class="amount due"><strong>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_due, 0)) }}</strong></td>
+            <td></td>
+          </tr>
+        </tfoot>
+       </table>
+    </div>
+  </div>
+</div>
+
+<!-- No Data Template -->
+<ng-template #noDataTpl>
+  <div class="no-data">
+    <span class="material-symbols-outlined">analytics</span>
+    <p>No data found for the selected period</p>
+    <button class="btn-primary" (click)="setPeriod('today')">View Today's Data</button>
+  </div>
+</ng-template>

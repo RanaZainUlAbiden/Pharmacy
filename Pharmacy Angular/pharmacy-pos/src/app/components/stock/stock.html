@@ -1,0 +1,305 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Busy overlay -->
+<div class="busy-overlay" *ngIf="isBusy">
+  <div class="busy-spinner"></div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>
+      <span class="material-symbols-outlined">inventory</span>
+      Stock Management
+    </h1>
+  </div>
+  
+  <div class="header-right">
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" placeholder="Search stock..." [(ngModel)]="searchTerm">
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab" [class.active]="viewMode === 'current'" (click)="viewMode = 'current'">
+    <span class="material-symbols-outlined">inventory_2</span>
+    Current Stock
+    <span class="count">{{ currentStock.length }}</span>
+  </button>
+  <button class="tab" [class.active]="viewMode === 'low'" (click)="viewMode = 'low'">
+    <span class="material-symbols-outlined">warning</span>
+    Low Stock
+    <span class="count danger" *ngIf="lowStockItems.length > 0">{{ lowStockItems.length }}</span>
+  </button>
+  <button class="tab" [class.active]="viewMode === 'expiring'" (click)="viewMode = 'expiring'">
+    <span class="material-symbols-outlined">event_busy</span>
+    Expiring Soon
+    <span class="count warning" *ngIf="expiringItems.length > 0">{{ expiringItems.length }}</span>
+  </button>
+  <button class="tab" [class.active]="viewMode === 'history'" (click)="viewMode = 'history'">
+    <span class="material-symbols-outlined">history</span>
+    Stock History
+  </button>
+</div>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading stock data...</p>
+</div>
+
+<!-- Current Stock View -->
+<div class="content-card" *ngIf="!isLoading && viewMode === 'current'">
+  <div class="table-container">
+    <table *ngIf="filteredCurrentStock.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Company</th>
+          <th>Category</th>
+          <th>Packing</th>
+          <th>Sale Price</th>
+          <th>Stock</th>
+          <th>Batches</th>
+          <th>Next Expiry</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredCurrentStock">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ item.name }}
+          </td>
+          <td>{{ item.company_name || '—' }}</td>
+          <td>{{ item.category_name || '—' }}</td>
+          <td>{{ item.packing_name || '—' }}</td>
+          <td class="amount">{{ formatCurrency(item.sale_price) }}</td>
+          <td>
+            <span class="stock-badge" [class]="getStockStatusClass(item.current_stock, item.minimum_threshold)">
+              {{ item.current_stock || 0 }}
+            </span>
+          </td>
+          <td>{{ item.batch_count || 0 }}</td>
+          <td [class]="getExpiryClass(daysToExpiry(item.earliest_expiry))">
+            {{ formatDate(item.earliest_expiry) }}
+          </td>
+          <td class="actions">
+            <button class="icon-btn" (click)="viewMedicineBatches(item)" title="View Batches">
+              <span class="material-symbols-outlined">inventory_2</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Low Stock View -->
+<div class="content-card" *ngIf="!isLoading && viewMode === 'low'">
+  <div class="alert-header" *ngIf="lowStockItems.length > 0">
+    <span class="material-symbols-outlined">warning</span>
+    <span>{{ lowStockItems.length }} items need attention</span>
+  </div>
+  
+  <div class="table-container">
+    <table *ngIf="filteredLowStock.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Company</th>
+          <th>Current Stock</th>
+          <th>Min Threshold</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredLowStock">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ item.name }}
+          </td>
+          <td>{{ item.company_name || '—' }}</td>
+          <td class="amount"><strong>{{ item.current_stock || 0 }}</strong></td>
+          <td class="amount">{{ item.minimum_threshold || 0 }}</td>
+          <td>
+            <span class="severity-badge" [class]="'severity-' + item.severity?.toLowerCase().replace(' ', '-')">
+              {{ item.severity || 'Low' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="icon-btn" (click)="goToPurchase()" title="Add Stock">
+              <span class="material-symbols-outlined">add_shopping_cart</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="action-footer" *ngIf="lowStockItems.length > 0">
+    <button class="btn-primary" (click)="goToPurchase()">
+      <span class="material-symbols-outlined">add</span>
+      Order New Stock
+    </button>
+  </div>
+</div>
+
+<!-- Expiring Items View -->
+<div class="content-card" *ngIf="!isLoading && viewMode === 'expiring'">
+  <div class="alert-header warning" *ngIf="expiringItems.length > 0">
+    <span class="material-symbols-outlined">event_busy</span>
+    <span>{{ expiringItems.length }} items expiring in next 90 days</span>
+  </div>
+  
+  <div class="table-container">
+    <table *ngIf="filteredExpiring.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Batch</th>
+          <th>Expiry Date</th>
+          <th>Days Left</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredExpiring">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ item.medicine_name }}
+          </td>
+          <td>{{ item.batch_name }}</td>
+          <td [class]="getExpiryClass(item.days_to_expiry)">
+            {{ formatDate(item.expiry_date) }}
+          </td>
+          <td [class]="getExpiryClass(item.days_to_expiry)">
+            {{ item.days_to_expiry }} days
+          </td>
+          <td class="amount">{{ item.quantity_remaining }}</td>
+          <td>
+            <span class="expiry-badge" [class]="getExpiryClass(item.days_to_expiry)">
+              {{ getExpiryText(item.days_to_expiry) }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="icon-btn" (click)="goToSales()" title="Sell Now">
+              <span class="material-symbols-outlined">point_of_sale</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Stock History View -->
+<div class="content-card" *ngIf="!isLoading && viewMode === 'history'">
+  <div class="table-container">
+    <table *ngIf="filteredHistory.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Medicine</th>
+          <th>Batch</th>
+          <th>Type</th>
+          <th>Quantity</th>
+          <th>Remarks</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredHistory">
+          <td>{{ formatDate(item.log_date) }}</td>
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ item.medicine_name }}
+          </td>
+          <td>{{ item.batch_name }}</td>
+          <td>
+            <span class="type-badge" [class]="getChangeTypeClass(item.change_type)">
+              <span class="material-symbols-outlined">{{ getChangeTypeIcon(item.change_type) }}</span>
+              {{ item.change_type }}
+            </span>
+          </td>
+          <td class="amount" [class.positive]="item.change_type === 'PURCHASE'" 
+                           [class.negative]="item.change_type === 'SALE'">
+            {{ item.change_type === 'PURCHASE' ? '+' : '' }}{{ item.quantity_change }}
+          </td>
+          <td>{{ item.remarks || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Batches Modal -->
+<div class="modal-overlay" *ngIf="selectedMedicine" (click)="closeBatches()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <span class="material-symbols-outlined">inventory_2</span>
+        Batches for {{ selectedMedicine.name }}
+      </h3>
+      <button class="close-modal" (click)="closeBatches()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="table-container">
+        <table *ngIf="medicineBatches.length > 0; else noBatchesTpl">
+          <thead>
+            <tr>
+              <th>Batch Name</th>
+              <th>Purchase Date</th>
+              <th>Expiry Date</th>
+              <th>Quantity</th>
+              <th>Purchase Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let batch of medicineBatches">
+              <td>{{ batch.BatchName }}</td>
+              <td>{{ formatDate(batch.purchase_date) }}</td>
+              <td [class]="getExpiryClass(daysToExpiry(batch.expiry_date))">
+                {{ formatDate(batch.expiry_date) }}
+              </td>
+              <td class="amount">{{ batch.quantity_remaining }}</td>
+              <td class="amount">{{ formatCurrency(batch.purchase_price) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-primary" (click)="goToPurchase()">
+        <span class="material-symbols-outlined">add</span>
+        Add Stock
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #noDataTpl>
+  <div class="no-data">
+    <span class="material-symbols-outlined">inventory</span>
+    <p>No items found</p>
+  </div>
+</ng-template>
+
+<ng-template #noBatchesTpl>
+  <div class="no-data-small">
+    <span class="material-symbols-outlined">inventory_2</span>
+    <p>No batches found for this medicine</p>
+  </div>
+</ng-template>
