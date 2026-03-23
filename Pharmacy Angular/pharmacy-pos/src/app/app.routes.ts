@@ -7,6 +7,7 @@ import { CustomersResolver } from './resolvers/customers.resolver';
 import { MedicinesComponent} from './components/medicines/medicines'
 import { CompaniesComponent} from './components/companies/companies'
 import { DashboardResolver } from './resolvers/dashboard.resolver'; // Add this
+import { PurchasesComponent } from './components/purchases/purchases';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -22,6 +23,10 @@ export const routes: Routes = [
           dashboardData: DashboardResolver  // Add resolver
         }
       },
+      { 
+  path: 'purchases', 
+  component: PurchasesComponent
+},
       { 
         path: 'customers', 
         component: CustomersComponent,

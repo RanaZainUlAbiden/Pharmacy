@@ -1,0 +1,346 @@
+<!-- Custom Confirm Dialog -->
+<div class="confirm-overlay" *ngIf="showConfirmDialog">
+  <div class="confirm-box">
+    <span class="material-symbols-outlined confirm-icon">delete_forever</span>
+    <p>{{ confirmMessage }}</p>
+    <div class="confirm-actions">
+      <button class="btn-secondary" (click)="onConfirmNo()">
+        <span class="material-symbols-outlined">close</span> Cancel
+      </button>
+      <button class="btn-danger" (click)="onConfirmYes()">
+        <span class="material-symbols-outlined">delete</span> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Busy overlay -->
+<div class="busy-overlay" *ngIf="isBusy">
+  <div class="busy-spinner"></div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <button class="back-btn" *ngIf="showForm || viewMode==='details'"
+            (click)="showForm ? cancelForm() : goBack()">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1>
+      <span class="material-symbols-outlined">shopping_cart</span>
+      <span *ngIf="!showForm && viewMode==='list'">Purchases</span>
+      <span *ngIf="showForm && viewMode==='add'">New Purchase Batch</span>
+      <span *ngIf="!showForm && viewMode==='details'">Purchase Details</span>
+    </h1>
+  </div>
+  <div class="header-right" *ngIf="!showForm && viewMode==='list'">
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" placeholder="Search purchases..." [(ngModel)]="searchTerm">
+    </div>
+    <button class="btn-primary" (click)="showAddForm()" [disabled]="isBusy">
+      <span class="material-symbols-outlined">add</span> New Purchase
+    </button>
+  </div>
+</div>
+
+<!-- List View -->
+<div class="content-card" *ngIf="!showForm && viewMode==='list'">
+  <div class="table-container" *ngIf="!isLoading; else loadingTpl">
+    <table *ngIf="filteredPurchases.length > 0; else noDataTpl">
+      <thead>
+        <tr>
+          <th>Batch Name</th>
+          <th>Supplier</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let p of filteredPurchases; trackBy: trackById">
+          <td class="batch-name">
+            <span class="material-symbols-outlined">inventory</span>{{ p.BatchName }}
+          </td>
+          <td>{{ p.company_name || '—' }}</td>
+          <td>{{ formatDate(p.purchase_date) }}</td>
+          <td><span class="count-badge">{{ p.item_count || 0 }}</span></td>
+          <td class="amount">{{ formatCurrency(p.total_price) }}</td>
+          <td class="amount">{{ formatCurrency(p.paid) }}</td>
+          <td>
+            <span class="status-badge" [class]="getPaymentStatusClass(p.total_price, p.paid)">
+              {{ getPaymentStatus(p.total_price, p.paid) }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="icon-btn" (click)="showDetails(p)" [disabled]="isBusy" title="View">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Purchase Form -->
+<div class="content-card" *ngIf="showForm && viewMode==='add'" [attr.data-key]="formKey">
+  <form class="purchase-form" #purchaseForm="ngForm" (ngSubmit)="createPurchase()">
+    
+    <!-- Batch Info -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">info</span>
+        Batch Information
+      </h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Batch Name *</label>
+          <input type="text" class="form-control" [(ngModel)]="formBatchName" name="batchName" required
+                 placeholder="e.g., BATCH-JAN-2025">
+        </div>
+        
+        <div class="form-group">
+          <label>Supplier *</label>
+          <select class="form-control" [(ngModel)]="formCompanyId" name="companyId" required>
+            <option [value]="null">Select Supplier</option>
+            <option *ngFor="let c of companies" [value]="c.company_id">{{ c.company_name }}</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Purchase Date</label>
+          <input type="date" class="form-control" [(ngModel)]="formPurchaseDate" name="purchaseDate">
+        </div>
+        
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [(ngModel)]="formStatus" name="status">
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Items Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">add_shopping_cart</span>
+        Add Items
+      </h3>
+      
+      <div class="item-row">
+        <div class="form-group flex-2">
+          <label>Medicine *</label>
+          <select class="form-control" [(ngModel)]="selectedMedicineId" name="selectedMedicine" (change)="onMedicineSelect()">
+            <option [value]="null">Select Medicine</option>
+            <option *ngFor="let m of medicines" [value]="m.product_id">{{ m.name }}</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" class="form-control" [(ngModel)]="itemQuantity" min="1" step="1">
+        </div>
+        
+        <div class="form-group">
+          <label>Purchase Price *</label>
+          <input type="number" class="form-control" [(ngModel)]="itemPurchasePrice" min="0" step="0.01">
+        </div>
+        
+        <div class="form-group">
+          <label>Expiry Date *</label>
+          <input type="date" class="form-control" [(ngModel)]="itemExpiryDate">
+        </div>
+        
+        <div class="form-group add-btn">
+          <button type="button" class="btn-add" (click)="addItem()" [disabled]="!selectedMedicineId">
+            <span class="material-symbols-outlined">add</span>
+            Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div class="items-table" *ngIf="tempItems.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Quantity</th>
+              <th>Purchase Price</th>
+              <th>Total</th>
+              <th>Expiry Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of tempItems; let i = index">
+              <td>{{ item.medicine_name }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ formatCurrency(item.purchase_price) }}</td>
+              <td class="amount">{{ formatCurrency(item.total) }}</td>
+              <td [class.expired]="isExpired(item.expiry_date)">{{ formatDate(item.expiry_date) }}</td>
+              <td class="actions">
+                <button type="button" class="icon-btn delete" (click)="removeItem(i)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3"><strong>Total</strong></td>
+              <td class="amount"><strong>{{ formatCurrency(formTotalPrice) }}</strong></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payment Section -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">payments</span>
+        Payment
+      </h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Total Amount</label>
+          <input type="number" class="form-control" [value]="formTotalPrice" disabled>
+        </div>
+        
+        <div class="form-group">
+          <label>Amount Paid</label>
+          <input type="number" class="form-control" [(ngModel)]="formPaid" name="paid" min="0" step="0.01">
+        </div>
+        
+        <div class="form-group">
+          <label>Balance</label>
+          <input type="number" class="form-control" [value]="formTotalPrice - formPaid" disabled>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isBusy">
+        <span class="material-symbols-outlined">close</span> Cancel
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="tempItems.length === 0 || isBusy">
+        <span class="material-symbols-outlined">save</span>
+        Create Purchase
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Purchase Details View -->
+<div class="content-card" *ngIf="!showForm && viewMode==='details' && selectedPurchase">
+  <div class="purchase-profile">
+    <div class="profile-info">
+      <h2>{{ selectedPurchase.BatchName }}</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="material-symbols-outlined">business</span>
+          <div>
+            <label>Supplier</label>
+            <p>{{ selectedPurchase.company_name || '—' }}</p>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="material-symbols-outlined">calendar_today</span>
+          <div>
+            <label>Purchase Date</label>
+            <p>{{ formatDate(selectedPurchase.purchase_date) }}</p>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="material-symbols-outlined">payments</span>
+          <div>
+            <label>Total / Paid</label>
+            <p>{{ formatCurrency(selectedPurchase.total_price) }} / {{ formatCurrency(selectedPurchase.paid) }}</p>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="material-symbols-outlined">receipt</span>
+          <div>
+            <label>Status</label>
+            <p>
+              <span class="status-badge" [class]="getPaymentStatusClass(selectedPurchase.total_price, selectedPurchase.paid)">
+                {{ getPaymentStatus(selectedPurchase.total_price, selectedPurchase.paid) }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span class="material-symbols-outlined">inventory</span>
+    Items Received
+  </div>
+
+  <div class="table-container">
+    <table *ngIf="purchaseItems.length > 0; else noItemsTpl">
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Quantity</th>
+          <th>Purchase Price</th>
+          <th>Total</th>
+          <th>Expiry Date</th>
+          <th>Remaining</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of purchaseItems">
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>{{ item.medicine_name }}
+          </td>
+          <td>{{ item.quantity_received }}</td>
+          <td>{{ formatCurrency(item.purchase_price) }}</td>
+          <td class="amount">{{ formatCurrency(item.purchase_price * item.quantity_received) }}</td>
+          <td [class.expired]="isExpired(item.expiry_date)">{{ formatDate(item.expiry_date) }}</td>
+          <td><span class="stock-badge" [class]="item.quantity_remaining > 0 ? 'badge-ok' : 'badge-out'">{{ item.quantity_remaining }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Templates -->
+<ng-template #loadingTpl>
+  <div class="loading-state"><div class="spinner"></div><p>Loading purchases...</p></div>
+</ng-template>
+
+<ng-template #noDataTpl>
+  <div class="no-data">
+    <span class="material-symbols-outlined">shopping_cart</span>
+    <p>No purchases found</p>
+    <button class="btn-primary" (click)="showAddForm()">Add First Purchase</button>
+  </div>
+</ng-template>
+
+<ng-template #noItemsTpl>
+  <div class="no-data-small">
+    <span class="material-symbols-outlined">inventory</span>
+    <p>No items in this purchase</p>
+  </div>
+</ng-template>
