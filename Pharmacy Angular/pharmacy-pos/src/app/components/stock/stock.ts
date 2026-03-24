@@ -16,7 +16,6 @@ export class StockComponent implements OnInit, OnDestroy {
   viewMode: 'current' | 'low' | 'expiring' | 'history' = 'current';
   selectedMedicine: any = null;
   searchTerm = '';
-  filterStatus = 'all'; // all, low, expiring
 
   // Data
   currentStock: any[] = [];
@@ -109,17 +108,16 @@ export class StockComponent implements OnInit, OnDestroy {
     try {
       const result = await this.dbRun(`
         SELECT 
-          m.product_id, m.name, m.sale_price, m.minimum_threshold,
-          c.company_name,
-          cat.category_name,
+          m.product_id, 
+          m.name, 
+          m.sale_price, 
+          m.minimum_threshold,
           p.packing_name,
           COALESCE(SUM(bi.quantity_remaining), 0) as current_stock,
           COUNT(DISTINCT bi.batch_item_id) as batch_count,
           MIN(bi.expiry_date) as earliest_expiry
         FROM medicines m
         LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-        LEFT JOIN company c ON m.company_id = c.company_id
-        LEFT JOIN categories cat ON m.category_id = cat.category_id
         LEFT JOIN packing p ON m.packing_id = p.packing_id
         GROUP BY m.product_id
         ORDER BY 
@@ -139,8 +137,11 @@ export class StockComponent implements OnInit, OnDestroy {
     try {
       const result = await this.dbRun(`
         SELECT 
-          m.product_id, m.name, m.sale_price, m.minimum_threshold,
-          c.company_name,
+          m.product_id, 
+          m.name, 
+          m.sale_price, 
+          m.minimum_threshold,
+          p.packing_name,
           COALESCE(SUM(bi.quantity_remaining), 0) as current_stock,
           MIN(bi.expiry_date) as earliest_expiry,
           CASE 
@@ -150,7 +151,7 @@ export class StockComponent implements OnInit, OnDestroy {
           END as severity
         FROM medicines m
         LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-        LEFT JOIN company c ON m.company_id = c.company_id
+        LEFT JOIN packing p ON m.packing_id = p.packing_id
         GROUP BY m.product_id
         HAVING current_stock <= m.minimum_threshold
         ORDER BY 
@@ -177,12 +178,10 @@ export class StockComponent implements OnInit, OnDestroy {
           bi.quantity_remaining,
           bi.purchase_price,
           m.sale_price,
-          c.company_name,
           pb.BatchName as batch_name,
           julianday(bi.expiry_date) - julianday(date('now')) as days_to_expiry
         FROM batch_items bi
         JOIN medicines m ON bi.product_id = m.product_id
-        JOIN company c ON m.company_id = c.company_id
         JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
         WHERE bi.quantity_remaining > 0
           AND bi.expiry_date <= date('now', '+90 days')
@@ -224,11 +223,9 @@ export class StockComponent implements OnInit, OnDestroy {
           bi.*,
           pb.BatchName,
           pb.purchase_date,
-          pb.company_id,
-          c.company_name as supplier_name
+          pb.company_id
         FROM batch_items bi
         JOIN purchase_batches pb ON bi.purchase_batch_id = pb.purchase_batch_id
-        JOIN company c ON pb.company_id = c.company_id
         WHERE bi.product_id = ?
         ORDER BY bi.expiry_date
       `, [medicine.product_id]);
@@ -254,10 +251,6 @@ export class StockComponent implements OnInit, OnDestroy {
     this.router.navigate(['/sales']);
   }
 
-  goToMedicine(medicineId: number) {
-    this.router.navigate(['/medicines']);
-  }
-
   getStockStatusClass(stock: number, threshold: number): string {
     if (stock === 0) return 'status-out';
     if (stock <= threshold * 0.25) return 'status-critical';
@@ -272,6 +265,14 @@ export class StockComponent implements OnInit, OnDestroy {
     return 'Good';
   }
 
+  daysToExpiry(date: string): number {
+    if (!date) return 999;
+    const today = new Date();
+    const expiry = new Date(date);
+    const diffTime = expiry.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
   getExpiryClass(days: number): string {
     if (days <= 0) return 'expiry-expired';
     if (days <= 30) return 'expiry-critical';
@@ -284,6 +285,28 @@ export class StockComponent implements OnInit, OnDestroy {
     if (days <= 30) return 'Expiring Soon';
     if (days <= 60) return 'Near Expiry';
     return 'Good';
+  }
+
+  getChangeTypeIcon(type: string): string {
+    switch(type) {
+      case 'PURCHASE': return 'add_shopping_cart';
+      case 'SALE': return 'point_of_sale';
+      case 'ADJUSTMENT': return 'edit';
+      case 'RETURN': return 'undo';
+      case 'EXPIRED': return 'event_busy';
+      default: return 'info';
+    }
+  }
+
+  getChangeTypeClass(type: string): string {
+    switch(type) {
+      case 'PURCHASE': return 'type-purchase';
+      case 'SALE': return 'type-sale';
+      case 'ADJUSTMENT': return 'type-adjustment';
+      case 'RETURN': return 'type-return';
+      case 'EXPIRED': return 'type-expired';
+      default: return '';
+    }
   }
 
   formatCurrency(amount: number): string {
@@ -307,8 +330,7 @@ export class StockComponent implements OnInit, OnDestroy {
     if (!this.searchTerm) return this.currentStock;
     const term = this.searchTerm.toLowerCase();
     return this.currentStock.filter(m =>
-      m.name.toLowerCase().includes(term) ||
-      (m.company_name && m.company_name.toLowerCase().includes(term))
+      m.name.toLowerCase().includes(term)
     );
   }
 
@@ -316,8 +338,7 @@ export class StockComponent implements OnInit, OnDestroy {
     if (!this.searchTerm) return this.lowStockItems;
     const term = this.searchTerm.toLowerCase();
     return this.lowStockItems.filter(m =>
-      m.name.toLowerCase().includes(term) ||
-      (m.company_name && m.company_name.toLowerCase().includes(term))
+      m.name.toLowerCase().includes(term)
     );
   }
 
@@ -325,8 +346,7 @@ export class StockComponent implements OnInit, OnDestroy {
     if (!this.searchTerm) return this.expiringItems;
     const term = this.searchTerm.toLowerCase();
     return this.expiringItems.filter(m =>
-      m.medicine_name.toLowerCase().includes(term) ||
-      (m.company_name && m.company_name.toLowerCase().includes(term))
+      m.medicine_name.toLowerCase().includes(term)
     );
   }
 
@@ -338,36 +358,4 @@ export class StockComponent implements OnInit, OnDestroy {
       (h.batch_name && h.batch_name.toLowerCase().includes(term))
     );
   }
-
-  getChangeTypeIcon(type: string): string {
-    switch(type) {
-      case 'PURCHASE': return 'add_shopping_cart';
-      case 'SALE': return 'point_of_sale';
-      case 'ADJUSTMENT': return 'edit';
-      case 'RETURN': return 'undo';
-      case 'EXPIRED': return 'event_busy';
-      default: return 'info';
-    }
-  }
-
-  // Add this method
-daysToExpiry(date: string): number {
-  if (!date) return 999;
-  const today = new Date();
-  const expiry = new Date(date);
-  const diffTime = expiry.getTime() - today.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
-
-  getChangeTypeClass(type: string): string {
-    switch(type) {
-      case 'PURCHASE': return 'type-purchase';
-      case 'SALE': return 'type-sale';
-      case 'ADJUSTMENT': return 'type-adjustment';
-      case 'RETURN': return 'type-return';
-      case 'EXPIRED': return 'type-expired';
-      default: return '';
-    }
-  }
-}
-

@@ -64,8 +64,6 @@
       <thead>
         <tr>
           <th>Medicine</th>
-          <th>Company</th>
-          <th>Category</th>
           <th>Packing</th>
           <th>Sale Price</th>
           <th>Stock</th>
@@ -78,9 +76,7 @@
           <td class="medicine-name">
             <span class="material-symbols-outlined">medication</span>
             {{ item.name }}
-          </td>
-          <td>{{ item.company_name || '—' }}</td>
-          <td>{{ item.category_name || '—' }}</td>
+           </td>
           <td>{{ item.packing_name || '—' }}</td>
           <td class="amount">{{ formatCurrency(item.sale_price) }}</td>
           <td>
@@ -115,19 +111,22 @@
       <thead>
         <tr>
           <th>Medicine</th>
-          <th>Company</th>
-          <th>Current Stock</th>
+          <th>Packing</th>
+          <th>Sale Price</th>
+          <th>Stock</th>
           <th>Min Threshold</th>
           <th>Status</th>
           <th>Actions</th>
-        </thead>
+        </tr>
+      </thead>
       <tbody>
         <tr *ngFor="let item of filteredLowStock">
           <td class="medicine-name">
             <span class="material-symbols-outlined">medication</span>
             {{ item.name }}
           </td>
-          <td>{{ item.company_name || '—' }}</td>
+          <td>{{ item.packing_name || '—' }}</td>
+          <td class="amount">{{ formatCurrency(item.sale_price) }}</td>
           <td class="amount"><strong>{{ item.current_stock || 0 }}</strong></td>
           <td class="amount">{{ item.minimum_threshold || 0 }}</td>
           <td>
@@ -171,7 +170,8 @@
           <th>Quantity</th>
           <th>Status</th>
           <th>Actions</th>
-        </thead>
+        </tr>
+      </thead>
       <tbody>
         <tr *ngFor="let item of filteredExpiring">
           <td class="medicine-name">
@@ -214,7 +214,8 @@
           <th>Type</th>
           <th>Quantity</th>
           <th>Remarks</th>
-        </thead>
+        </tr>
+      </thead>
       <tbody>
         <tr *ngFor="let item of filteredHistory">
           <td>{{ formatDate(item.log_date) }}</td>

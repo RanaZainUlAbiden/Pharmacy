@@ -1,0 +1,118 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>
+      <span class="material-symbols-outlined">reorder</span>
+      Reorder Management
+    </h1>
+  </div>
+  <div class="header-right">
+    <button class="btn-primary" (click)="saveToLocal()" [disabled]="reorderList.length === 0">
+      <span class="material-symbols-outlined">save</span>
+      Save List
+    </button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="reorder-container">
+  <!-- Add Medicine Dropdown -->
+  <div class="add-section">
+    <select class="medicine-select" [(ngModel)]="selectedMedicineId">
+      <option [value]="null">-- Add Medicine to Reorder --</option>
+      <option *ngFor="let m of getFilteredMedicines()" [value]="m.product_id">
+        {{ m.name }} (Stock: {{ m.current_stock || 0 }} | Min: {{ m.minimum_threshold || 10 }})
+      </option>
+    </select>
+    <button class="btn-add" (click)="addMedicineToReorder()" [disabled]="!selectedMedicineId">
+      <span class="material-symbols-outlined">add</span>
+      Add
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- Reorder Table -->
+  <div class="table-container" *ngIf="!isLoading">
+    <table *ngIf="reorderList.length > 0; else emptyReorder">
+      <thead>
+        <tr>
+          <th>Medicine Name</th>
+          <th>Reorder Quantity</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of reorderList">
+          <!-- Medicine Name -->
+          <td class="medicine-name">
+            <span class="material-symbols-outlined">medication</span>
+            {{ item.name }}
+          </td>
+          
+          <!-- Reorder Quantity - Inline Editable -->
+          <td class="quantity-cell">
+            <div *ngIf="editingItemId !== item.product_id" class="quantity-display">
+              <span>{{ item.quantity }}</span>
+            </div>
+            <div *ngIf="editingItemId === item.product_id" class="quantity-edit">
+              <input 
+                type="number" 
+                class="quantity-input" 
+                [(ngModel)]="editQuantity" 
+                min="1" 
+                step="1"
+                autofocus>
+            </div>
+          </td>
+          
+          <!-- Actions -->
+          <td class="actions-cell">
+            <div *ngIf="editingItemId !== item.product_id" class="action-buttons">
+              <button class="icon-btn edit" (click)="startEdit(item)" title="Edit">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button class="icon-btn delete" (click)="deleteItem(item)" title="Delete">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+            <div *ngIf="editingItemId === item.product_id" class="action-buttons">
+              <button class="icon-btn save" (click)="saveEdit(item)" title="Save">
+                <span class="material-symbols-outlined">save</span>
+              </button>
+              <button class="icon-btn cancel" (click)="cancelEdit()" title="Cancel">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td><strong>Total Items</strong></td>
+          <td><strong>{{ reorderList.length }}</strong></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <ng-template #emptyReorder>
+      <div class="empty-reorder">
+        <span class="material-symbols-outlined">reorder</span>
+        <p>No items in reorder list</p>
+        <p class="hint">Select a medicine from dropdown above to add</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

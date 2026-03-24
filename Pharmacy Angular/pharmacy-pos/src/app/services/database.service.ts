@@ -7,9 +7,8 @@ export class DatabaseService {
   
   constructor() { 
     console.log('DatabaseService initialized');
-    // @ts-ignore   
+    // @ts-ignore
     console.log('window.electronAPI exists?', !!window.electronAPI);
-
   }
 
   /**
@@ -43,14 +42,12 @@ export class DatabaseService {
   // ============ MEDICINE METHODS ============
 
   /**
-   * Get all medicines
+   * Get all medicines (updated - removed company and category)
    */
   async getAllMedicines() {
     return this.query(`
-      SELECT m.*, c.company_name, cat.category_name, p.packing_name 
+      SELECT m.*, p.packing_name 
       FROM medicines m
-      LEFT JOIN company c ON m.company_id = c.company_id
-      LEFT JOIN categories cat ON m.category_id = cat.category_id
       LEFT JOIN packing p ON m.packing_id = p.packing_id
       ORDER BY m.name
     `);
@@ -64,39 +61,35 @@ export class DatabaseService {
   }
 
   /**
-   * Add new medicine
+   * Add new medicine (updated - removed company_id and category_id)
    */
   async addMedicine(medicine: any) {
     const sql = `INSERT INTO medicines 
-      (name, description, company_id, packing_id, category_id, sale_price, minimum_threshold) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      (name, description, packing_id, sale_price, minimum_threshold) 
+      VALUES (?, ?, ?, ?, ?)`;
     
     return this.query(sql, [
       medicine.name,
       medicine.description || '',
-      medicine.company_id,
       medicine.packing_id,
-      medicine.category_id,
       medicine.sale_price,
       medicine.minimum_threshold || 0
     ], 'run');
   }
 
   /**
-   * Update medicine
+   * Update medicine (updated - removed company_id and category_id)
    */
   async updateMedicine(id: number, medicine: any) {
     const sql = `UPDATE medicines 
-      SET name = ?, description = ?, company_id = ?, packing_id = ?, 
-          category_id = ?, sale_price = ?, minimum_threshold = ?
+      SET name = ?, description = ?, packing_id = ?, 
+          sale_price = ?, minimum_threshold = ?
       WHERE product_id = ?`;
     
     return this.query(sql, [
       medicine.name,
       medicine.description || '',
-      medicine.company_id,
       medicine.packing_id,
-      medicine.category_id,
       medicine.sale_price,
       medicine.minimum_threshold || 0,
       id
@@ -113,7 +106,7 @@ export class DatabaseService {
   // ============ STOCK METHODS ============
 
   /**
-   * Get current stock with batch info
+   * Get current stock with batch info (updated - removed company and category)
    */
   async getCurrentStock() {
     // @ts-ignore
@@ -121,7 +114,7 @@ export class DatabaseService {
   }
 
   /**
-   * Get low stock items
+   * Get low stock items (updated - removed company)
    */
   async getLowStock() {
     // @ts-ignore
@@ -129,7 +122,7 @@ export class DatabaseService {
   }
 
   /**
-   * Get expiring items
+   * Get expiring items (updated - removed company)
    */
   async getExpiringItems(days: number = 60) {
     // @ts-ignore

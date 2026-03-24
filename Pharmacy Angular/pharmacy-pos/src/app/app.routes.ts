@@ -12,6 +12,7 @@ import { SalesComponent } from './components/sales/sales';
 import { StockComponent } from './components/stock/stock';
 import { ReportsComponent } from './components/reports/reports';
 import { SettingsComponent } from './components/settings/settings';
+import { ReorderComponent } from './components/reorder/reorder';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -26,7 +27,8 @@ export const routes: Routes = [
         resolve: { 
           dashboardData: DashboardResolver  // Add resolver
         }
-      },
+      },{ path: 'reorder', component: ReorderComponent }
+,
       { path: 'stock', component: StockComponent }
 ,
       { path: 'sales', component: SalesComponent }

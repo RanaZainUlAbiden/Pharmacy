@@ -1,8 +1,10 @@
-import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DatabaseService } from '../../services/database.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-sales',
@@ -13,34 +15,38 @@ import { DatabaseService } from '../../services/database.service';
 })
 export class SalesComponent implements OnInit, OnDestroy {
   @ViewChild('searchInput') searchInput!: ElementRef;
+  @ViewChild('quantityInput') quantityInput!: ElementRef;
 
-  // Cart items
+  // Cart
   cart: any[] = [];
-  cartTotal = 0;
   cartSubtotal = 0;
   cartDiscount = 0;
   cartTax = 0;
-  taxRate = 0.17; // 17% tax
+  cartTotal = 0;
+  taxRate = 0.17; // 17%
 
-  // Customer selection
-  customers: any[] = [];
-  selectedCustomerId: number | null = null;
-  selectedCustomer: any = null;
-  showCustomerDropdown = false;
-  customerSearchTerm = '';
-
-  // Medicine search
+  // Product search
   searchQuery = '';
   searchResults: any[] = [];
+  selectedIndex = -1;
   isSearching = false;
 
+  // For adding to cart
+  selectedProduct: any = null;
+  productQuantity = 1;
+  showQuantityInput = false;
+
+  // Customer
+  customerName = '';
+  
   // Payment
-  paymentAmount = 0;
-  paymentMethod: 'cash' | 'card' | 'credit' = 'cash';
+  discountPercent = 0;
+  paidAmount = 0;
   change = 0;
 
   // UI states
-  showPaymentDialog = false;
+  showCart = true;
+  isProcessing = false;
   showSuccessDialog = false;
   currentSale: any = null;
   invoiceNumber = '';
@@ -48,12 +54,6 @@ export class SalesComponent implements OnInit, OnDestroy {
   // Toast
   toast: { message: string; type: 'success' | 'error' } | null = null;
   private toastTimer: any = null;
-
-  // Busy state
-  isBusy = false;
-
-  // Barcode scanning
-  barcodeInput = '';
   private isDestroyed = false;
 
   constructor(
@@ -64,9 +64,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.loadCustomers();
     this.generateInvoiceNumber();
-    // Focus on search input
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();
@@ -123,18 +121,11 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.invoiceNumber = `INV-${year}${month}${day}-${random}`;
   }
 
-  async loadCustomers() {
-    try {
-      this.customers = await this.dbRun('SELECT * FROM customers ORDER BY full_name');
-    } catch (error) {
-      console.error('Error loading customers:', error);
-    }
-  }
-
-  // Search medicines
-  async searchMedicines() {
-    if (!this.searchQuery.trim() || this.searchQuery.length < 2) {
+  // Search products with keyboard navigation
+  async searchProducts() {
+    if (!this.searchQuery.trim() || this.searchQuery.length < 1) {
       this.searchResults = [];
+      this.selectedIndex = -1;
       return;
     }
 
@@ -145,96 +136,130 @@ export class SalesComponent implements OnInit, OnDestroy {
                COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
         FROM medicines m
         LEFT JOIN batch_items bi ON m.product_id = bi.product_id AND bi.quantity_remaining > 0
-        WHERE m.name LIKE ? OR m.name LIKE ?
+        WHERE m.name LIKE ?
         GROUP BY m.product_id
         HAVING current_stock > 0
         ORDER BY m.name
         LIMIT 10
-      `, [`%${this.searchQuery}%`, `${this.searchQuery}%`]);
+      `, [`%${this.searchQuery}%`]);
       
       this.searchResults = results || [];
+      this.selectedIndex = this.searchResults.length > 0 ? 0 : -1;
     } catch (error) {
-      console.error('Error searching medicines:', error);
+      console.error('Error searching:', error);
     } finally {
       this.isSearching = false;
     }
   }
 
-  // Add to cart
-  async addToCart(medicine: any) {
-    // Check stock
-    if (medicine.current_stock <= 0) {
+  // Keyboard navigation
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    // Only handle when quantity input is NOT focused
+    if (document.activeElement === this.quantityInput?.nativeElement) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (this.searchResults.length > 0) {
+        this.selectedIndex = (this.selectedIndex + 1) % this.searchResults.length;
+      }
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (this.searchResults.length > 0) {
+        this.selectedIndex = (this.selectedIndex - 1 + this.searchResults.length) % this.searchResults.length;
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.selectedIndex >= 0 && this.searchResults[this.selectedIndex]) {
+        this.selectProduct(this.searchResults[this.selectedIndex]);
+      }
+    }
+  }
+
+  selectProduct(product: any) {
+    if (product.current_stock <= 0) {
       this.showToast('Out of stock!', 'error');
+      return;
+    }
+    
+    this.selectedProduct = product;
+    this.productQuantity = 1;
+    this.showQuantityInput = true;
+    
+    // Focus on quantity input
+    setTimeout(() => {
+      if (this.quantityInput) {
+        this.quantityInput.nativeElement.focus();
+        this.quantityInput.nativeElement.select();
+      }
+    }, 50);
+  }
+
+  // Called when Enter is pressed on quantity input
+  onQuantityEnter() {
+    this.addToCart();
+  }
+
+  addToCart() {
+    if (!this.selectedProduct) return;
+    
+    if (this.productQuantity < 1) {
+      this.showToast('Quantity must be at least 1', 'error');
+      return;
+    }
+    
+    if (this.productQuantity > this.selectedProduct.current_stock) {
+      this.showToast(`Only ${this.selectedProduct.current_stock} available`, 'error');
       return;
     }
 
     // Check if already in cart
-    const existing = this.cart.find(item => item.product_id === medicine.product_id);
+    const existing = this.cart.find(item => item.product_id === this.selectedProduct.product_id);
     
     if (existing) {
-      if (existing.quantity + 1 > medicine.current_stock) {
-        this.showToast(`Only ${medicine.current_stock} available`, 'error');
+      if (existing.quantity + this.productQuantity > this.selectedProduct.current_stock) {
+        this.showToast(`Only ${this.selectedProduct.current_stock} available total`, 'error');
         return;
       }
-      existing.quantity++;
+      existing.quantity += this.productQuantity;
       existing.total = existing.quantity * existing.price;
     } else {
       this.cart.push({
-        product_id: medicine.product_id,
-        name: medicine.name,
-        price: medicine.sale_price,
-        quantity: 1,
-        total: medicine.sale_price,
-        max_stock: medicine.current_stock
+        product_id: this.selectedProduct.product_id,
+        name: this.selectedProduct.name,
+        price: this.selectedProduct.sale_price,
+        quantity: this.productQuantity,
+        total: this.productQuantity * this.selectedProduct.sale_price,
+        max_stock: this.selectedProduct.current_stock
       });
     }
 
     this.updateCartTotals();
+    this.showToast(`${this.selectedProduct.name} added to cart`, 'success');
+    
+    // Reset and go back to search
+    this.selectedProduct = null;
+    this.showQuantityInput = false;
     this.searchQuery = '';
     this.searchResults = [];
-    this.showToast(`${medicine.name} added to cart`, 'success');
+    this.selectedIndex = -1;
     
-    // Refocus on search
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();
       }
-    }, 100);
-  }
-
-  // Handle barcode scan
-  async onBarcodeScan() {
-    if (!this.barcodeInput.trim()) return;
-    
-    try {
-      const medicine = await this.dbRun(`
-        SELECT m.product_id, m.name, m.sale_price, 
-               COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
-        FROM medicines m
-        LEFT JOIN batch_items bi ON m.product_id = bi.product_id AND bi.quantity_remaining > 0
-        WHERE m.name LIKE ? OR m.product_id = ?
-        GROUP BY m.product_id
-      `, [`%${this.barcodeInput}%`, this.barcodeInput], 'get');
-      
-      if (medicine && medicine.current_stock > 0) {
-        await this.addToCart(medicine);
-      } else {
-        this.showToast('Medicine not found or out of stock', 'error');
-      }
-    } catch (error) {
-      console.error('Error scanning barcode:', error);
-    }
-    
-    this.barcodeInput = '';
+    }, 50);
   }
 
   updateCartTotals() {
     this.cartSubtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
-    this.cartTax = this.cartSubtotal * this.taxRate;
-    this.cartDiscount = 0; // Can add discount functionality later
-    this.cartTotal = this.cartSubtotal + this.cartTax - this.cartDiscount;
+    this.cartDiscount = this.cartSubtotal * (this.discountPercent / 100);
+    this.cartTax = (this.cartSubtotal - this.cartDiscount) * this.taxRate;
+    this.cartTotal = this.cartSubtotal - this.cartDiscount + this.cartTax;
     
-    this.cdr.detectChanges();
+    this.calculateChange();
   }
 
   updateQuantity(item: any, change: number) {
@@ -268,62 +293,60 @@ export class SalesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Customer selection
-  selectCustomer(customer: any) {
-    this.selectedCustomerId = customer.customer_id;
-    this.selectedCustomer = customer;
-    this.showCustomerDropdown = false;
-    this.customerSearchTerm = '';
+  onDiscountChange() {
+    if (this.discountPercent < 0) this.discountPercent = 0;
+    if (this.discountPercent > 100) this.discountPercent = 100;
+    this.updateCartTotals();
   }
 
-  get filteredCustomers() {
-    if (!this.customerSearchTerm) return this.customers;
-    const term = this.customerSearchTerm.toLowerCase();
-    return this.customers.filter(c => 
-      c.full_name.toLowerCase().includes(term) ||
-      (c.phone && c.phone.includes(term))
-    );
+  calculateChange() {
+    this.change = Math.max(0, this.paidAmount - this.cartTotal);
   }
 
-  // Payment
-  openPaymentDialog() {
+  async processSale() {
     if (this.cart.length === 0) {
       this.showToast('Cart is empty', 'error');
       return;
     }
-    
-    if (!this.selectedCustomerId) {
-      // Use walk-in customer (ID 1)
-      this.selectedCustomerId = 1;
-      this.selectedCustomer = { customer_id: 1, full_name: 'Walk-in Customer' };
-    }
-    
-    this.paymentAmount = this.cartTotal;
-    this.change = 0;
-    this.showPaymentDialog = true;
-  }
 
-  calculateChange() {
-    this.change = Math.max(0, this.paymentAmount - this.cartTotal);
-  }
-
-  async processPayment() {
-    if (this.paymentAmount < this.cartTotal) {
-      this.showToast('Insufficient payment amount', 'error');
+    if (this.paidAmount < this.cartTotal) {
+      this.showToast('Insufficient payment', 'error');
       return;
     }
 
-    this.isBusy = true;
-    this.showPaymentDialog = false;
+    this.isProcessing = true;
 
     try {
-      // Get batch items for each medicine (FIFO - oldest expiry first)
+      // Get customer ID (use walk-in if no name)
+      let customerId = 1; // walk-in customer ID
+      
+      if (this.customerName.trim()) {
+        // Check if customer exists
+        let existing = await this.dbRun(
+          'SELECT customer_id FROM customers WHERE full_name = ?',
+          [this.customerName.trim()],
+          'get'
+        );
+        
+        if (!existing) {
+          // Create new customer
+          const result = await this.dbRun(
+            'INSERT INTO customers (full_name, phone, address) VALUES (?, ?, ?)',
+            [this.customerName.trim(), '', ''],
+            'run'
+          );
+          customerId = (result as any).lastID;
+        } else {
+          customerId = existing.customer_id;
+        }
+      }
+
+      // Get batch items for each medicine (FIFO)
       const saleItems = [];
       
       for (const item of this.cart) {
-        // Get available batches for this medicine
         const batches = await this.dbRun(`
-          SELECT batch_item_id, quantity_remaining, expiry_date, purchase_price
+          SELECT batch_item_id, quantity_remaining, expiry_date
           FROM batch_items
           WHERE product_id = ? AND quantity_remaining > 0
           ORDER BY expiry_date ASC
@@ -352,9 +375,9 @@ export class SalesComponent implements OnInit, OnDestroy {
 
       // Create sale
       const saleData = {
-        customer_id: this.selectedCustomerId,
+        customer_id: customerId,
         total_amount: this.cartTotal,
-        paid_amount: this.paymentAmount
+        paid_amount: this.paidAmount
       };
 
       // @ts-ignore
@@ -363,117 +386,78 @@ export class SalesComponent implements OnInit, OnDestroy {
       this.currentSale = {
         id: saleId,
         invoice_number: this.invoiceNumber,
-        customer: this.selectedCustomer?.full_name || 'Walk-in Customer',
+        customer: this.customerName.trim() || 'Walk-in Customer',
         date: new Date(),
         items: [...this.cart],
         subtotal: this.cartSubtotal,
+        discount: this.cartDiscount,
         tax: this.cartTax,
         total: this.cartTotal,
-        paid: this.paymentAmount,
+        paid: this.paidAmount,
         change: this.change,
-        payment_method: this.paymentMethod
+        discount_percent: this.discountPercent
       };
       
       this.showSuccessDialog = true;
+      this.showToast('Sale completed successfully!');
       
     } catch (error: any) {
       console.error('Error processing sale:', error);
       this.showToast(error.message || 'Failed to process sale', 'error');
     } finally {
-      this.isBusy = false;
-      this.cdr.detectChanges();
+      this.isProcessing = false;
     }
   }
 
-  // Print receipt
   printReceipt() {
-    const receiptWindow = window.open('', '_blank');
-    if (!receiptWindow) return;
+    const doc = new jsPDF();
     
-    receiptWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Receipt - ${this.currentSale?.invoice_number}</title>
-        <style>
-          body {
-            font-family: 'Courier New', monospace;
-            width: 300px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 1px dashed #000;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-          }
-          .header h1 { margin: 0; font-size: 18px; }
-          .header p { margin: 5px 0; font-size: 12px; }
-          .items { width: 100%; margin: 10px 0; }
-          .items th, .items td { text-align: left; font-size: 12px; }
-          .items td:last-child, .items th:last-child { text-align: right; }
-          .totals { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; }
-          .totals p { margin: 3px 0; font-size: 12px; }
-          .footer { text-align: center; margin-top: 20px; font-size: 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Pharmacy POS</h1>
-          <p>${this.currentSale?.invoice_number}</p>
-          <p>${new Date().toLocaleString()}</p>
-          <p>Customer: ${this.currentSale?.customer}</p>
-        </div>
-        
-        <table class="items">
-          <thead>
-            <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-          </thead>
-          <tbody>
-            ${this.currentSale?.items.map((item: any) => `
-              <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity}</td>
-                <td>${this.formatCurrency(item.price)}</td>
-                <td>${this.formatCurrency(item.total)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
-        <div class="totals">
-          <p>Subtotal: ${this.formatCurrency(this.currentSale?.subtotal)}</p>
-          <p>Tax (17%): ${this.formatCurrency(this.currentSale?.tax)}</p>
-          <p><strong>Total: ${this.formatCurrency(this.currentSale?.total)}</strong></p>
-          <p>Paid: ${this.formatCurrency(this.currentSale?.paid)}</p>
-          <p>Change: ${this.formatCurrency(this.currentSale?.change)}</p>
-          <p>Payment: ${this.currentSale?.payment_method.toUpperCase()}</p>
-        </div>
-        
-        <div class="footer">
-          <p>Thank you for your purchase!</p>
-          <p>Visit us again</p>
-        </div>
-      </body>
-      </html>
-    `);
+    doc.setFontSize(16);
+    doc.text('Pharmacy POS', 105, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(this.currentSale?.invoice_number || '', 105, 28, { align: 'center' });
+    doc.text(`Date: ${new Date().toLocaleString()}`, 20, 40);
+    doc.text(`Customer: ${this.currentSale?.customer}`, 20, 48);
     
-    receiptWindow.document.close();
-    receiptWindow.print();
+    const headers = ['Item', 'Qty', 'Price', 'Total'];
+    const data = this.currentSale?.items.map((item: any) => [
+      item.name,
+      item.quantity,
+      `PKR ${item.price}`,
+      `PKR ${item.total}`
+    ]);
+    
+    autoTable(doc, {
+      head: [headers],
+      body: data,
+      startY: 55,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [102, 126, 234] }
+    });
+    
+    const finalY = (doc as any).lastAutoTable.finalY + 5;
+    
+    doc.text(`Subtotal: PKR ${this.currentSale?.subtotal.toLocaleString()}`, 120, finalY);
+    doc.text(`Discount (${this.currentSale?.discount_percent}%): -PKR ${this.currentSale?.discount.toLocaleString()}`, 120, finalY + 7);
+    doc.text(`Tax (17%): PKR ${this.currentSale?.tax.toLocaleString()}`, 120, finalY + 14);
+    doc.text(`Total: PKR ${this.currentSale?.total.toLocaleString()}`, 120, finalY + 24);
+    doc.text(`Paid: PKR ${this.currentSale?.paid.toLocaleString()}`, 120, finalY + 31);
+    doc.text(`Change: PKR ${this.currentSale?.change.toLocaleString()}`, 120, finalY + 38);
+    
+    doc.text('Thank you for your purchase!', 105, finalY + 50, { align: 'center' });
+    
+    doc.save(`receipt_${this.currentSale?.invoice_number}.pdf`);
+    this.showToast('Receipt printed');
   }
 
   newSale() {
     this.cart = [];
-    this.selectedCustomerId = null;
-    this.selectedCustomer = null;
-    this.cartTotal = 0;
-    this.cartSubtotal = 0;
-    this.cartTax = 0;
-    this.paymentAmount = 0;
+    this.customerName = '';
+    this.discountPercent = 0;
+    this.paidAmount = 0;
     this.change = 0;
-    this.searchQuery = '';
-    this.searchResults = [];
+    this.updateCartTotals();
     this.showSuccessDialog = false;
     this.currentSale = null;
     this.generateInvoiceNumber();
@@ -485,12 +469,6 @@ export class SalesComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
-  // Add this method inside the SalesComponent class
-hideCustomerDropdown() {
-  setTimeout(() => {
-    this.showCustomerDropdown = false;
-  }, 200);
-}
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency',

@@ -19,8 +19,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
   // Data arrays
   medicines: any[] = [];
-  companies: any[] = [];
-  categories: any[] = [];
   packings: any[] = [];
   selectedMedicine: any = null;
   medicineBatches: any[] = [];
@@ -30,8 +28,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   formId: number | null = null;
   formName = '';
   formDescription = '';
-  formCompanyId: number | null = null;
-  formCategoryId: number | null = null;
   formPackingId: number | null = null;
   formSalePrice: number | null = null;
   formMinimumThreshold: number | null = null;
@@ -43,7 +39,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   isLoading = false;
   private isDestroyed = false;
 
-  // ✅ Custom confirm dialog — window.confirm() ki jagah
+  // Custom confirm dialog
   showConfirmDialog = false;
   confirmMessage = '';
   private confirmCallback: (() => void) | null = null;
@@ -63,7 +59,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     if (this.toastTimer) clearTimeout(this.toastTimer);
   }
 
-  // ✅ Custom confirm — window.confirm() use nahi karta
   private openConfirm(message: string, onConfirm: () => void) {
     this.zone.run(() => {
       this.confirmMessage = message;
@@ -91,7 +86,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Database helper
   private dbRun(sql: string, params: any[] = [], method = 'all'): Promise<any> {
     return new Promise((resolve, reject) => {
       this.db.query(sql, params, method)
@@ -108,30 +102,36 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Load all data
+  private showToast(msg: string, type: 'success' | 'error' = 'success') {
+    if (this.isDestroyed) return;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+
+    this.zone.run(() => {
+      this.toast = { message: msg, type };
+      this.cdr.detectChanges();
+    });
+
+    this.toastTimer = setTimeout(() => {
+      this.zone.run(() => {
+        if (!this.isDestroyed) {
+          this.toast = null;
+          this.cdr.detectChanges();
+        }
+      });
+    }, 3000);
+  }
+
   async loadInitialData() {
     if (this.isDestroyed) return;
     this.isLoading = true;
     this.cdr.detectChanges();
 
     try {
-      const [companiesRes, categoriesRes, packingsRes] = await Promise.all([
-        this.dbRun('SELECT company_id, company_name FROM company ORDER BY company_name'),
-        this.dbRun('SELECT category_id, category_name FROM categories ORDER BY category_name'),
+      const [packingsRes] = await Promise.all([
         this.dbRun('SELECT packing_id, packing_name FROM packing ORDER BY packing_name')
       ]);
 
       if (!this.isDestroyed) {
-        this.companies = companiesRes || [];
-
-        const uniqueCategories = new Map();
-        (categoriesRes || []).forEach((cat: any) => {
-          if (!uniqueCategories.has(cat.category_name)) {
-            uniqueCategories.set(cat.category_name, cat);
-          }
-        });
-        this.categories = Array.from(uniqueCategories.values());
-
         const uniquePackings = new Map();
         (packingsRes || []).forEach((p: any) => {
           if (!uniquePackings.has(p.packing_name)) {
@@ -139,7 +139,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
           }
         });
         this.packings = Array.from(uniquePackings.values());
-
         await this.loadMedicines();
       }
     } catch (error) {
@@ -159,13 +158,9 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     const result = await this.dbRun(`
       SELECT 
         m.product_id, m.name, m.description, m.sale_price, m.minimum_threshold,
-        c.company_id, c.company_name,
-        cat.category_id, cat.category_name,
         p.packing_id, p.packing_name,
         COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
       FROM medicines m
-      LEFT JOIN company c ON m.company_id = c.company_id
-      LEFT JOIN categories cat ON m.category_id = cat.category_id
       LEFT JOIN packing p ON m.packing_id = p.packing_id
       LEFT JOIN batch_items bi ON m.product_id = bi.product_id
       GROUP BY m.product_id
@@ -195,32 +190,11 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private showToast(msg: string, type: 'success' | 'error' = 'success') {
-    if (this.isDestroyed) return;
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-
-    this.zone.run(() => {
-      this.toast = { message: msg, type };
-      this.cdr.detectChanges();
-    });
-
-    this.toastTimer = setTimeout(() => {
-      this.zone.run(() => {
-        if (!this.isDestroyed) {
-          this.toast = null;
-          this.cdr.detectChanges();
-        }
-      });
-    }, 3000);
-  }
-
   get filteredMedicines(): any[] {
     if (!this.searchTerm.trim()) return this.medicines;
     const term = this.searchTerm.toLowerCase();
     return this.medicines.filter(m =>
-      m.name.toLowerCase().includes(term) ||
-      (m.company_name && m.company_name.toLowerCase().includes(term)) ||
-      (m.category_name && m.category_name.toLowerCase().includes(term))
+      m.name.toLowerCase().includes(term)
     );
   }
 
@@ -232,8 +206,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formId = null;
     this.formName = '';
     this.formDescription = '';
-    this.formCompanyId = null;
-    this.formCategoryId = null;
     this.formPackingId = null;
     this.formSalePrice = null;
     this.formMinimumThreshold = null;
@@ -249,8 +221,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     this.formId = medicine.product_id;
     this.formName = medicine.name || '';
     this.formDescription = medicine.description || '';
-    this.formCompanyId = medicine.company_id;
-    this.formCategoryId = medicine.category_id;
     this.formPackingId = medicine.packing_id;
     this.formSalePrice = medicine.sale_price;
     this.formMinimumThreshold = medicine.minimum_threshold || 0;
@@ -294,12 +264,22 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   }
 
   private validateForm(): boolean {
-    if (!this.formName?.trim()) { this.showToast('Medicine name is required', 'error'); return false; }
-    if (!this.formCompanyId) { this.showToast('Please select a company', 'error'); return false; }
-    if (!this.formCategoryId) { this.showToast('Please select a category', 'error'); return false; }
-    if (!this.formPackingId) { this.showToast('Please select packing type', 'error'); return false; }
-    if (!this.formSalePrice || this.formSalePrice <= 0) { this.showToast('Sale price must be greater than 0', 'error'); return false; }
-    if (this.formMinimumThreshold === null || this.formMinimumThreshold < 0) { this.showToast('Minimum threshold cannot be negative', 'error'); return false; }
+    if (!this.formName?.trim()) { 
+      this.showToast('Medicine name is required', 'error'); 
+      return false; 
+    }
+    if (!this.formPackingId) { 
+      this.showToast('Please select packing type', 'error'); 
+      return false; 
+    }
+    if (!this.formSalePrice || this.formSalePrice <= 0) { 
+      this.showToast('Sale price must be greater than 0', 'error'); 
+      return false; 
+    }
+    if (this.formMinimumThreshold === null || this.formMinimumThreshold < 0) { 
+      this.showToast('Minimum threshold cannot be negative', 'error'); 
+      return false; 
+    }
     return true;
   }
 
@@ -310,25 +290,30 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
     try {
       await this.dbRun(
-        `INSERT INTO medicines (name, description, company_id, category_id, packing_id, sale_price, minimum_threshold)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO medicines (name, description, packing_id, sale_price, minimum_threshold)
+         VALUES (?, ?, ?, ?, ?)`,
         [this.formName.trim(), this.formDescription?.trim() || null,
-         this.formCompanyId, this.formCategoryId, this.formPackingId,
-         this.formSalePrice, this.formMinimumThreshold || 0],
+         this.formPackingId, this.formSalePrice, this.formMinimumThreshold || 0],
         'run'
       );
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine added successfully!');
-        this.showForm = false; this.formMode = null; this.viewMode = 'list';
-        this.selectedMedicine = null; this.medicineBatches = [];
+        this.showForm = false; 
+        this.formMode = null; 
+        this.viewMode = 'list';
+        this.selectedMedicine = null; 
+        this.medicineBatches = [];
       }
     } catch (error: any) {
       if (!this.isDestroyed) {
         this.showToast(error?.message?.includes('UNIQUE') ? 'This medicine already exists' : 'Failed to add medicine', 'error');
       }
     } finally {
-      if (!this.isDestroyed) { this.isBusy = false; this.cdr.detectChanges(); }
+      if (!this.isDestroyed) { 
+        this.isBusy = false; 
+        this.cdr.detectChanges(); 
+      }
     }
   }
 
@@ -340,29 +325,32 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
     try {
       await this.dbRun(
-        `UPDATE medicines SET name=?, description=?, company_id=?, category_id=?,
-         packing_id=?, sale_price=?, minimum_threshold=? WHERE product_id=?`,
+        `UPDATE medicines SET name=?, description=?, packing_id=?, sale_price=?, minimum_threshold=? WHERE product_id=?`,
         [this.formName.trim(), this.formDescription?.trim() || null,
-         this.formCompanyId, this.formCategoryId, this.formPackingId,
-         this.formSalePrice, this.formMinimumThreshold || 0, id],
+         this.formPackingId, this.formSalePrice, this.formMinimumThreshold || 0, id],
         'run'
       );
       if (!this.isDestroyed) {
         await this.loadMedicines();
         this.showToast('Medicine updated successfully!');
-        this.showForm = false; this.formMode = null; this.viewMode = 'list';
-        this.selectedMedicine = null; this.medicineBatches = [];
+        this.showForm = false; 
+        this.formMode = null; 
+        this.viewMode = 'list';
+        this.selectedMedicine = null; 
+        this.medicineBatches = [];
       }
     } catch (error: any) {
       if (!this.isDestroyed) {
         this.showToast(error?.message?.includes('UNIQUE') ? 'This medicine already exists' : 'Failed to update medicine', 'error');
       }
     } finally {
-      if (!this.isDestroyed) { this.isBusy = false; this.cdr.detectChanges(); }
+      if (!this.isDestroyed) { 
+        this.isBusy = false; 
+        this.cdr.detectChanges(); 
+      }
     }
   }
 
-  // ✅ FIXED DELETE — window.confirm() nahi, custom Angular dialog use karta hai
   deleteMedicine(medicineId: number) {
     if (this.isBusy || this.isDestroyed) return;
 
@@ -379,8 +367,11 @@ export class MedicinesComponent implements OnInit, OnDestroy {
             this.showToast('Medicine deleted successfully!');
 
             if (this.selectedMedicine?.product_id === medicineId) {
-              this.showForm = false; this.formMode = null; this.viewMode = 'list';
-              this.selectedMedicine = null; this.medicineBatches = [];
+              this.showForm = false; 
+              this.formMode = null; 
+              this.viewMode = 'list';
+              this.selectedMedicine = null; 
+              this.medicineBatches = [];
             }
           }
         } catch (error: any) {
@@ -399,7 +390,9 @@ export class MedicinesComponent implements OnInit, OnDestroy {
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PK', {
-      style: 'currency', currency: 'PKR', minimumFractionDigits: 0
+      style: 'currency', 
+      currency: 'PKR', 
+      minimumFractionDigits: 0
     }).format(amount || 0);
   }
 

@@ -24,7 +24,7 @@ export class LayoutComponent implements OnInit {
     { icon: 'inventory', label: 'Stock', route: '/stock', active: false },
     { icon: 'people', label: 'companies', route: '/companies', active: false },
     { icon: 'shopping_cart', label: 'Purchases', route: '/purchases', active: false },
-    { icon: 'people', label: 'Customers', route: '/customers', active: false },
+    { icon: 'reorder', label: 'Reorder', route: '/reorder', active: false },
     { icon: 'assessment', label: 'Reports', route: '/reports', active: false },
     { icon: 'settings', label: 'Settings', route: '/settings', active: false }
   ];

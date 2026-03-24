@@ -58,43 +58,39 @@
   <div class="table-container" *ngIf="!isLoading; else loadingTpl">
     <table *ngIf="filteredMedicines.length > 0; else noDataTpl">
       <thead>
-        <tr>
-          <th>Medicine Name</th>
-          <th>Category</th>
-          <th>Company</th>
-          <th>Packing</th>
-          <th>Sale Price</th>
-          <th>Stock</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+  <tr>
+    <th>Medicine Name</th>
+    <th>Packing</th>
+    <th>Sale Price</th>
+    <th>Stock</th>
+    <th>Actions</th>
+  </tr>
+</thead>
       <tbody>
-        <tr *ngFor="let m of filteredMedicines; trackBy: trackById">
-          <td class="medicine-name">
-            <span class="material-symbols-outlined">medication</span>{{ m.name }}
-          </td>
-          <td>{{ m.category_name || '—' }}</td>
-          <td>{{ m.company_name || '—' }}</td>
-          <td>{{ m.packing_name || '—' }}</td>
-          <td class="amount">{{ formatCurrency(m.sale_price) }}</td>
-          <td>
-            <span class="stock-badge" [class]="getStockClass(m.current_stock, m.minimum_threshold)">
-              {{ m.current_stock ?? 0 }}
-            </span>
-          </td>
-          <td class="actions">
-            <button class="icon-btn" (click)="showDetails(m)" [disabled]="isBusy" title="View">
-              <span class="material-symbols-outlined">visibility</span>
-            </button>
-            <button class="icon-btn" (click)="showEditForm(m)" [disabled]="isBusy" title="Edit">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
-            <button class="icon-btn delete" (click)="deleteMedicine(m.product_id)" [disabled]="isBusy" title="Delete">
-              <span class="material-symbols-outlined">delete</span>
-            </button>
-          </td>
-        </tr>
-      </tbody>
+  <tr *ngFor="let m of filteredMedicines; trackBy: trackById">
+    <td class="medicine-name">
+      <span class="material-symbols-outlined">medication</span>{{ m.name }}
+    </td>
+    <td>{{ m.packing_name || '—' }}</td>
+    <td class="amount">{{ formatCurrency(m.sale_price) }}</td>
+    <td>
+      <span class="stock-badge" [class]="getStockClass(m.current_stock, m.minimum_threshold)">
+        {{ m.current_stock ?? 0 }}
+      </span>
+    </td>
+    <td class="actions">
+      <button class="icon-btn" (click)="showDetails(m)" [disabled]="isBusy" title="View">
+        <span class="material-symbols-outlined">visibility</span>
+      </button>
+      <button class="icon-btn" (click)="showEditForm(m)" [disabled]="isBusy" title="Edit">
+        <span class="material-symbols-outlined">edit</span>
+      </button>
+      <button class="icon-btn delete" (click)="deleteMedicine(m.product_id)" [disabled]="isBusy" title="Delete">
+        <span class="material-symbols-outlined">delete</span>
+      </button>
+    </td>
+  </tr>
+</tbody>
     </table>
   </div>
 </div>
@@ -103,119 +99,87 @@
 <div class="content-card" *ngIf="showForm" [attr.data-key]="formKey">
   <form class="medicine-form" #medicineForm="ngForm" (ngSubmit)="formMode==='add' ? addMedicine() : updateMedicine()">
 
-    <!-- Medicine Name -->
-    <div class="form-group">
-      <label for="medicineName">
-        <span class="material-symbols-outlined">medication</span>Medicine Name *
-      </label>
-      <input type="text" id="medicineName" name="medicineName" class="form-control" 
-             [(ngModel)]="formName" required minlength="2" #medicineName="ngModel"
-             placeholder="Enter medicine name" autocomplete="off">
-      <div class="validation-error" *ngIf="medicineName.invalid && medicineName.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span *ngIf="medicineName.errors?.['required']">Medicine name is required</span>
-        <span *ngIf="medicineName.errors?.['minlength']">Minimum 2 characters required</span>
-      </div>
+  <!-- Medicine Name -->
+  <div class="form-group">
+    <label for="medicineName">
+      <span class="material-symbols-outlined">medication</span>Medicine Name *
+    </label>
+    <input type="text" id="medicineName" name="medicineName" class="form-control" 
+           [(ngModel)]="formName" required minlength="2" #medicineName="ngModel"
+           placeholder="Enter medicine name" autocomplete="off">
+    <div class="validation-error" *ngIf="medicineName.invalid && medicineName.touched">
+      <span class="material-symbols-outlined">error</span>
+      <span *ngIf="medicineName.errors?.['required']">Medicine name is required</span>
+      <span *ngIf="medicineName.errors?.['minlength']">Minimum 2 characters required</span>
     </div>
+  </div>
 
-    <!-- Description -->
-    <div class="form-group">
-      <label for="medicineDescription">
-        <span class="material-symbols-outlined">description</span>Description
-      </label>
-      <textarea id="medicineDescription" name="medicineDescription" class="form-control" 
-                [(ngModel)]="formDescription" #medicineDescription="ngModel"
-                rows="2" placeholder="Enter medicine description (optional)"></textarea>
-    </div>
+  <!-- Description -->
+  <div class="form-group">
+    <label for="medicineDescription">
+      <span class="material-symbols-outlined">description</span>Description
+    </label>
+    <textarea id="medicineDescription" name="medicineDescription" class="form-control" 
+              [(ngModel)]="formDescription" #medicineDescription="ngModel"
+              rows="2" placeholder="Enter medicine description (optional)"></textarea>
+  </div>
 
-    <!-- Company Dropdown -->
-    <div class="form-group">
-      <label for="medicineCompany">
-        <span class="material-symbols-outlined">business</span>Company *
-      </label>
-      <select id="medicineCompany" name="medicineCompany" class="form-control" 
-              [(ngModel)]="formCompanyId" required #medicineCompany="ngModel">
-        <option value="" disabled selected>Select company</option>
-        <option *ngFor="let c of companies" [value]="c.company_id">{{ c.company_name }}</option>
-      </select>
-      <div class="validation-error" *ngIf="medicineCompany.invalid && medicineCompany.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span>Please select a company</span>
-      </div>
+  <!-- Packing Dropdown -->
+  <div class="form-group">
+    <label for="medicinePacking">
+      <span class="material-symbols-outlined">inventory</span>Packing *
+    </label>
+    <select id="medicinePacking" name="medicinePacking" class="form-control" 
+            [(ngModel)]="formPackingId" required #medicinePacking="ngModel">
+      <option value="" disabled selected>Select packing</option>
+      <option *ngFor="let p of packings" [value]="p.packing_id">{{ p.packing_name }}</option>
+    </select>
+    <div class="validation-error" *ngIf="medicinePacking.invalid && medicinePacking.touched">
+      <span class="material-symbols-outlined">error</span>
+      <span>Please select packing type</span>
     </div>
+  </div>
 
-    <!-- Category Dropdown -->
-    <div class="form-group">
-      <label for="medicineCategory">
-        <span class="material-symbols-outlined">category</span>Category *
-      </label>
-      <select id="medicineCategory" name="medicineCategory" class="form-control" 
-              [(ngModel)]="formCategoryId" required #medicineCategory="ngModel">
-        <option value="" disabled selected>Select category</option>
-        <option *ngFor="let cat of categories" [value]="cat.category_id">{{ cat.category_name }}</option>
-      </select>
-      <div class="validation-error" *ngIf="medicineCategory.invalid && medicineCategory.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span>Please select a category</span>
-      </div>
+  <!-- Sale Price -->
+  <div class="form-group">
+    <label for="medicineSalePrice">
+      <span class="material-symbols-outlined">payments</span>Sale Price (PKR) *
+    </label>
+    <input type="number" id="medicineSalePrice" name="medicineSalePrice" class="form-control" 
+           [(ngModel)]="formSalePrice" required min="1" step="0.01" #medicineSalePrice="ngModel"
+           placeholder="Enter sale price">
+    <div class="validation-error" *ngIf="medicineSalePrice.invalid && medicineSalePrice.touched">
+      <span class="material-symbols-outlined">error</span>
+      <span *ngIf="medicineSalePrice.errors?.['required']">Sale price is required</span>
+      <span *ngIf="medicineSalePrice.errors?.['min']">Price must be greater than 0</span>
     </div>
+  </div>
 
-    <!-- Packing Dropdown -->
-    <div class="form-group">
-      <label for="medicinePacking">
-        <span class="material-symbols-outlined">inventory</span>Packing *
-      </label>
-      <select id="medicinePacking" name="medicinePacking" class="form-control" 
-              [(ngModel)]="formPackingId" required #medicinePacking="ngModel">
-        <option value="" disabled selected>Select packing</option>
-        <option *ngFor="let p of packings" [value]="p.packing_id">{{ p.packing_name }}</option>
-      </select>
-      <div class="validation-error" *ngIf="medicinePacking.invalid && medicinePacking.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span>Please select packing type</span>
-      </div>
+  <!-- Minimum Threshold -->
+  <div class="form-group">
+    <label for="medicineThreshold">
+      <span class="material-symbols-outlined">warning</span>Minimum Stock Threshold *
+    </label>
+    <input type="number" id="medicineThreshold" name="medicineThreshold" class="form-control" 
+           [(ngModel)]="formMinimumThreshold" required min="0" step="1" #medicineThreshold="ngModel"
+           placeholder="Enter minimum stock level">
+    <div class="validation-error" *ngIf="medicineThreshold.invalid && medicineThreshold.touched">
+      <span class="material-symbols-outlined">error</span>
+      <span *ngIf="medicineThreshold.errors?.['required']">Threshold is required</span>
+      <span *ngIf="medicineThreshold.errors?.['min']">Threshold cannot be negative</span>
     </div>
+  </div>
 
-    <!-- Sale Price -->
-    <div class="form-group">
-      <label for="medicineSalePrice">
-        <span class="material-symbols-outlined">payments</span>Sale Price (PKR) *
-      </label>
-      <input type="number" id="medicineSalePrice" name="medicineSalePrice" class="form-control" 
-             [(ngModel)]="formSalePrice" required min="1" step="0.01" #medicineSalePrice="ngModel"
-             placeholder="Enter sale price">
-      <div class="validation-error" *ngIf="medicineSalePrice.invalid && medicineSalePrice.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span *ngIf="medicineSalePrice.errors?.['required']">Sale price is required</span>
-        <span *ngIf="medicineSalePrice.errors?.['min']">Price must be greater than 0</span>
-      </div>
-    </div>
-
-    <!-- Minimum Threshold -->
-    <div class="form-group">
-      <label for="medicineThreshold">
-        <span class="material-symbols-outlined">warning</span>Minimum Stock Threshold *
-      </label>
-      <input type="number" id="medicineThreshold" name="medicineThreshold" class="form-control" 
-             [(ngModel)]="formMinimumThreshold" required min="0" step="1" #medicineThreshold="ngModel"
-             placeholder="Enter minimum stock level">
-      <div class="validation-error" *ngIf="medicineThreshold.invalid && medicineThreshold.touched">
-        <span class="material-symbols-outlined">error</span>
-        <span *ngIf="medicineThreshold.errors?.['required']">Threshold is required</span>
-        <span *ngIf="medicineThreshold.errors?.['min']">Threshold cannot be negative</span>
-      </div>
-    </div>
-
-    <div class="form-actions">
-      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">close</span>Cancel
-      </button>
-      <button type="submit" class="btn-primary" [disabled]="medicineForm.invalid || isBusy">
-        <span class="material-symbols-outlined">{{ formMode==='add' ? 'save' : 'update' }}</span>
-        {{ formMode==='add' ? 'Save Medicine' : 'Update Medicine' }}
-      </button>
-    </div>
-  </form>
+  <div class="form-actions">
+    <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isBusy">
+      <span class="material-symbols-outlined">close</span>Cancel
+    </button>
+    <button type="submit" class="btn-primary" [disabled]="medicineForm.invalid || isBusy">
+      <span class="material-symbols-outlined">{{ formMode==='add' ? 'save' : 'update' }}</span>
+      {{ formMode==='add' ? 'Save Medicine' : 'Update Medicine' }}
+    </button>
+  </div>
+</form>
 </div>
 
 <!-- Details View -->

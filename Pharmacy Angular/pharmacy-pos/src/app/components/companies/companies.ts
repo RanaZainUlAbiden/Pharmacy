@@ -44,7 +44,7 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   isLoading = false;
   private isDestroyed = false;
 
-  // ✅ Custom confirm dialog — window.confirm() nahi
+  // Custom confirm dialog
   showConfirmDialog = false;
   confirmMessage    = '';
   private confirmCallback: (() => void) | null = null;
@@ -61,8 +61,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     this.isDestroyed = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
   }
-
-  // ── Custom Confirm ────────────────────────────────────────────────────────
 
   private openConfirm(message: string, onConfirm: () => void) {
     this.zone.run(() => {
@@ -91,8 +89,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── DB Helper ─────────────────────────────────────────────────────────────
-
   private dbRun(sql: string, params: any[] = [], method = 'all'): Promise<any> {
     return new Promise((resolve, reject) => {
       this.db.query(sql, params, method)
@@ -101,20 +97,13 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Load ──────────────────────────────────────────────────────────────────
-
   async loadCompanies() {
     if (this.isDestroyed) return;
     this.isLoading = true;
     this.cdr.detectChanges();
     try {
-      const result = await this.dbRun(
-        `SELECT c.*, COUNT(m.product_id) as medicine_count
-         FROM company c
-         LEFT JOIN medicines m ON c.company_id = m.company_id
-         GROUP BY c.company_id
-         ORDER BY c.company_name`
-      );
+      // Remove medicine count since company_id is removed from medicines
+      const result = await this.dbRun(`SELECT * FROM company ORDER BY company_name`);
       if (!this.isDestroyed) this.companies = Array.isArray(result) ? [...result] : [];
     } catch (e) {
       if (!this.isDestroyed) this.showToast('Failed to load companies.', 'error');
@@ -126,25 +115,10 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   async loadCompanyMedicines(id: number) {
     if (this.isDestroyed) return;
     try {
-      const result = await this.dbRun(
-        `SELECT m.product_id, m.name, m.sale_price, m.minimum_threshold,
-                cat.category_name, p.packing_name,
-                COALESCE(SUM(bi.quantity_remaining),0) as current_stock
-         FROM medicines m
-         LEFT JOIN categories cat ON m.category_id = cat.category_id
-         LEFT JOIN packing p ON m.packing_id = p.packing_id
-         LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-         WHERE m.company_id = ?
-         GROUP BY m.product_id ORDER BY m.name`, [id]
-      );
-      if (!this.isDestroyed) {
-        this.companyMedicines = Array.isArray(result) ? [...result] : [];
-        this.cdr.detectChanges();
-      }
+      // Since medicines no longer have company_id, show empty list
+      this.companyMedicines = [];
     } catch (e) { console.error(e); }
   }
-
-  // ── Toast ─────────────────────────────────────────────────────────────────
 
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;
@@ -154,8 +128,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
       this.zone.run(() => { if (!this.isDestroyed) { this.toast = null; this.cdr.detectChanges(); } });
     }, 3000);
   }
-
-  // ── Filter ────────────────────────────────────────────────────────────────
 
   get filteredCompanies(): any[] {
     if (!this.searchTerm.trim()) return this.companies;
@@ -169,16 +141,12 @@ export class CompaniesComponent implements OnInit, OnDestroy {
 
   trackById(_: number, item: any) { return item.company_id; }
 
-  // ── Validation ────────────────────────────────────────────────────────────
-
-  // Pakistan number formats: 03XX-XXXXXXX  /  +923XXXXXXXXX  /  03XXXXXXXXX
   private readonly phoneRegex = /^(\+92|0)3[0-9]{2}[-]?[0-9]{7}$/;
 
   private clearErrors() {
     this.nameError = this.contactError = this.addressError = '';
   }
 
-  // Real-time validation — HTML se call hoti hai (blur event)
   validateName() {
     const v = this.formName.trim();
     if (!v)          this.nameError = 'Company name is required.';
@@ -213,8 +181,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     return !!this.nameError || !!this.contactError || !!this.addressError
       || !this.formName.trim() || !this.formContact.trim() || !this.formAddress.trim();
   }
-
-  // ── Form open/close ───────────────────────────────────────────────────────
 
   private openForm(mode: 'add' | 'edit') {
     if (this.isDestroyed) return;
@@ -268,8 +234,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ── ADD ───────────────────────────────────────────────────────────────────
-
   async addCompany() {
     if (!this.validateAll() || this.isBusy || this.isDestroyed) return;
 
@@ -291,8 +255,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
       if (!this.isDestroyed) { this.isBusy = false; this.cdr.detectChanges(); }
     }
   }
-
-  // ── UPDATE ────────────────────────────────────────────────────────────────
 
   async updateCompany() {
     if (!this.validateAll() || !this.formId || this.isBusy || this.isDestroyed) return;
@@ -317,8 +279,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── DELETE — ✅ confirm() hata ke custom dialog lagaya ────────────────────
-
   deleteCompany(companyId: number) {
     if (this.isBusy || this.isDestroyed) return;
 
@@ -338,10 +298,7 @@ export class CompaniesComponent implements OnInit, OnDestroy {
           }
         } catch (e: any) {
           if (!this.isDestroyed) {
-            const msg = e?.message?.includes('FOREIGN KEY') || e?.message?.includes('constraint')
-              ? 'Cannot delete: medicines are linked to this company.'
-              : 'Failed to delete company.';
-            this.showToast(msg, 'error');
+            this.showToast('Cannot delete: company has records.', 'error');
           }
         } finally {
           if (!this.isDestroyed) { this.isBusy = false; this.cdr.detectChanges(); }
@@ -350,19 +307,9 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PK', {
       style: 'currency', currency: 'PKR', minimumFractionDigits: 0
     }).format(amount || 0);
-  }
-
-  getStockClass(stock: number, threshold: number): string {
-    const s = stock ?? 0, t = threshold ?? 0;
-    if (s === 0)      return 'badge-out';
-    if (s < t * 0.25) return 'badge-critical';
-    if (s < t)        return 'badge-low';
-    return 'badge-ok';
   }
 }

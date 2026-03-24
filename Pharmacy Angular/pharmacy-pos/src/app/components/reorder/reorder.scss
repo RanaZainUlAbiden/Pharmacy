@@ -1,0 +1,336 @@
+$primary-color: #667eea;
+$secondary-color: #764ba2;
+$success-color: #10b981;
+$danger-color: #ef4444;
+$text-dark: #1f2937;
+$text-light: #6b7280;
+$border-color: #e5e7eb;
+$bg-light: #f9fafb;
+$card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+
+// Toast
+.toast-container {
+  position: fixed;
+  top: 1.5rem; right: 1.5rem;
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  min-width: 280px;
+
+  .material-symbols-outlined { font-size: 22px; }
+
+  &.toast-success {
+    background: #ecfdf5; color: #065f46; border-left: 4px solid $success-color;
+    .material-symbols-outlined { color: $success-color; }
+  }
+  &.toast-error {
+    background: #fef2f2; color: #991b1b; border-left: 4px solid $danger-color;
+    .material-symbols-outlined { color: $danger-color; }
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+// Page Header
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  .header-left {
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+      font-size: 1.8rem;
+      color: $text-dark;
+      span { font-size: 32px; color: $primary-color; }
+    }
+  }
+}
+
+// Reorder Container
+.reorder-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: $card-shadow;
+  padding: 1.5rem;
+}
+
+// Add Section
+.add-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+
+  .medicine-select {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: $success-color;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Table
+.table-container {
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid $border-color;
+      background: $bg-light;
+    }
+
+    td {
+      padding: 1rem;
+      font-size: 0.95rem;
+      color: $text-dark;
+      border-bottom: 1px solid $border-color;
+      vertical-align: middle;
+    }
+
+    .medicine-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+
+      span {
+        color: $primary-color;
+        font-size: 20px;
+      }
+    }
+
+    .quantity-cell {
+      .quantity-display {
+        font-weight: 500;
+        padding: 0.5rem 0;
+      }
+
+      .quantity-edit {
+        .quantity-input {
+          width: 100px;
+          padding: 0.5rem;
+          border: 2px solid $primary-color;
+          border-radius: 6px;
+          font-size: 0.95rem;
+          text-align: center;
+
+          &:focus {
+            outline: none;
+          }
+        }
+      }
+    }
+
+    .actions-cell {
+      .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+      }
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      color: $text-light;
+      display: inline-flex;
+      align-items: center;
+
+      &:hover {
+        background: $bg-light;
+      }
+
+      &.edit:hover {
+        color: $primary-color;
+      }
+
+      &.delete:hover {
+        color: $danger-color;
+      }
+
+      &.save:hover {
+        color: $success-color;
+      }
+
+      &.cancel:hover {
+        color: $danger-color;
+      }
+    }
+
+    .total-row {
+      background: $bg-light;
+
+      td {
+        border-top: 2px solid $border-color;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: $text-light;
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Empty State
+.empty-reorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: $text-light;
+  text-align: center;
+
+  span {
+    font-size: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+}
+
+// Buttons
+.btn-primary {
+  background: linear-gradient(135deg, $primary-color, $secondary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($primary-color,0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .add-section {
+    flex-direction: column;
+
+    .medicine-select {
+      width: 100%;
+    }
+
+    .btn-add {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .table-container {
+    table {
+      th, td {
+        padding: 0.75rem;
+      }
+
+      .quantity-edit .quantity-input {
+        width: 70px;
+      }
+    }
+  }
+
+  .toast-container {
+    right: 1rem; left: 1rem; top: 1rem;
+    .toast { min-width: unset; width: 100%; }
+  }
+}
