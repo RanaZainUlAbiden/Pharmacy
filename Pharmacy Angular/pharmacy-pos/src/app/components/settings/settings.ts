@@ -26,9 +26,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Company settings
   companySettings = {
     name: 'Pharmacy POS',
-    address: '',
-    phone: '',
-    email: '',
+    address: '123 Main Street, Lahore, Pakistan',
+    phone: '0300-1234567',
+    email: 'info@pharmacy.com',
     taxRate: 17
   };
   
@@ -137,14 +137,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
-saveCompanySettings() {
-  localStorage.setItem('companySettings', JSON.stringify(this.companySettings));
-
-  // ✅ IMPORTANT: Notify all components
-  this.taxService.setTaxRate(this.companySettings.taxRate);
-
-  this.showToast('Company settings saved');
-}
+  saveCompanySettings() {
+    localStorage.setItem('companySettings', JSON.stringify(this.companySettings));
+    
+    // ✅ Notify all components about tax rate change
+    this.taxService.setTaxRate(this.companySettings.taxRate);
+    
+    this.showToast('Company settings saved');
+  }
 
   saveNotificationSettings() {
     localStorage.setItem('notificationSettings', JSON.stringify(this.notifications));
@@ -199,32 +199,51 @@ saveCompanySettings() {
   }
 
   async addUser() {
-    const username = prompt('Enter username:');
-    if (!username) return;
-    
-    const password = prompt('Enter password:');
-    if (!password) return;
-    
-    this.isBusy = true;
-    
-    try {
-      await this.dbRun(
-        'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-        [username, password],
-        'run'
-      );
-      await this.loadUsers();
-      this.showToast(`User ${username} added successfully`);
-    } catch (error: any) {
-      if (error?.message?.includes('UNIQUE')) {
-        this.showToast('Username already exists', 'error');
-      } else {
-        this.showToast('Failed to add user', 'error');
-      }
-    } finally {
-      this.isBusy = false;
-    }
+  // Use a simple prompt dialog (this works in Electron)
+  const username = window.prompt('Enter username:');
+  if (!username) return;
+  
+  // Check if username already exists
+  const existing = await this.dbRun(
+    'SELECT user_id FROM users WHERE username = ?',
+    [username],
+    'get'
+  );
+  
+  if (existing) {
+    this.showToast('Username already exists', 'error');
+    return;
   }
+  
+  const password = window.prompt('Enter password:');
+  if (!password) return;
+  
+  if (password.length < 4) {
+    this.showToast('Password must be at least 4 characters', 'error');
+    return;
+  }
+  
+  this.isBusy = true;
+  
+  try {
+    await this.dbRun(
+      'INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, datetime("now"))',
+      [username, password],
+      'run'
+    );
+    await this.loadUsers();
+    this.showToast(`User "${username}" added successfully`);
+  } catch (error: any) {
+    console.error('Error adding user:', error);
+    if (error?.message?.includes('UNIQUE')) {
+      this.showToast('Username already exists', 'error');
+    } else {
+      this.showToast('Failed to add user', 'error');
+    }
+  } finally {
+    this.isBusy = false;
+  }
+}
 
   async deleteUser(userId: number, username: string) {
     if (userId === this.currentUser.user_id) {
@@ -271,7 +290,7 @@ saveCompanySettings() {
   }
 
   async restoreDatabase() {
-    if (!confirm('Restoring will overwrite current data. Continue?')) return;
+    if (!confirm('⚠️ WARNING: Restoring will overwrite all current data. Continue?')) return;
     
     this.isBusy = true;
     
@@ -280,7 +299,11 @@ saveCompanySettings() {
       const result = await window.electronAPI.database.restore();
       
       if (result.success) {
-        this.showToast('Database restored. Please restart the app.');
+        this.showToast('Database restored successfully. Please restart the app.');
+        // Optionally reload page or data
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
         this.showToast('Restore failed', 'error');
       }
@@ -293,17 +316,75 @@ saveCompanySettings() {
   }
 
   clearData() {
-    if (!confirm('⚠️ WARNING: This will delete ALL data! Continue?')) return;
-    if (!confirm('Are you ABSOLUTELY sure? This cannot be undone!')) return;
+    if (!confirm('⚠️ WARNING: This will delete ALL data from the database! Continue?')) return;
+    if (!confirm('Are you ABSOLUTELY sure? This action cannot be undone!')) return;
     
     this.isBusy = true;
     
-    // This would require admin privileges - implement carefully
-    this.showToast('Feature requires admin approval', 'error');
-    this.isBusy = false;
+    // Show warning that this will clear all data
+this.showToast('Clearing data... This may take a moment', 'success');    
+    // Add this method to clear all tables
+    this.performClearData();
   }
 
+ async performClearData() {
+  try {
+    // List of tables to clear (order matters due to foreign keys)
+    const tables = [
+      'sale_items',
+      'sales',
+      'batch_items',
+      'purchase_batches',
+      'stock_log',
+      'customerpricerecord',
+      'payment_records',
+      'medicines',
+      'customers',
+      'company',        // ✅ ADDED - Company table
+      'users'
+    ];
+    
+    // Clear each table
+    for (const table of tables) {
+      await this.dbRun(`DELETE FROM ${table}`, [], 'run');
+      console.log(`Cleared table: ${table}`);
+    }
+    
+    // Reset users to default admin
+    await this.dbRun(
+      `INSERT INTO users (username, password_hash) VALUES ('admin', 'admin123')`,
+      [],
+      'run'
+    );
+    
+    // Reset customers to default walk-in
+    await this.dbRun(
+      `INSERT INTO customers (full_name, phone, address) VALUES ('walkin', '9090909090', 'walkin')`,
+      [],
+      'run'
+    );
+    
+    // ✅ Reset packing table if needed (optional - keep default packings)
+    // You may want to keep packing types, so I'm not clearing them
+    
+    this.showToast('All data cleared successfully! Please restart the app.', 'success');
+    
+    // Clear localStorage
+    localStorage.clear();
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Error clearing data:', error);
+    this.showToast('Failed to clear data', 'error');
+  } finally {
+    this.isBusy = false;
+  }
+}
   formatDate(date: string): string {
+    if (!date) return '';
     return new Date(date).toLocaleString();
   }
 }

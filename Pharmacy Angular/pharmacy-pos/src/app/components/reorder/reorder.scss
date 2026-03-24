@@ -1,4 +1,3 @@
-// ── Variables ─────────────────────────────────────────────────────────────────
 $primary:   #667eea;
 $secondary: #764ba2;
 $success:   #10b981;
@@ -12,7 +11,7 @@ $white:     #ffffff;
 $shadow:    0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
 $radius:    12px;
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 .toast-container {
   position: fixed; top: 1.25rem; right: 1.25rem;
   z-index: 9999; animation: slideIn .3s ease;
@@ -29,9 +28,11 @@ $radius:    12px;
     .material-symbols-outlined { color: $danger; } }
 }
 
-// ── Page header ───────────────────────────────────────────────────────────────
+@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+// Page Header
 .page-header {
-  display: flex; justify-content: space-between; align-items: flex-start;
+  display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
 
   .header-left {
@@ -40,15 +41,14 @@ $radius:    12px;
       margin: 0; font-size: 1.75rem; color: $dark;
       .material-symbols-outlined { font-size: 30px; color: $primary; }
     }
-    .page-sub { margin: .25rem 0 0 2.6rem; font-size: .82rem; color: $muted; }
   }
 
   .header-right {
-    display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+    display: flex; gap: .75rem; align-items: center;
   }
 }
 
-// ── Buttons ───────────────────────────────────────────────────────────────────
+// Buttons
 .btn-primary {
   display: inline-flex; align-items: center; gap: .4rem;
   padding: .65rem 1.25rem;
@@ -57,23 +57,11 @@ $radius:    12px;
   font-weight: 600; font-size: .9rem; cursor: pointer;
   transition: all .2s;
   &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba($primary,.3); }
-  &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-  .material-symbols-outlined { font-size: 18px; }
-}
-
-.btn-secondary {
-  display: inline-flex; align-items: center; gap: .4rem;
-  padding: .65rem 1.25rem;
-  background: $white; color: $muted;
-  border: 1px solid $border; border-radius: 8px;
-  font-weight: 500; font-size: .9rem; cursor: pointer;
-  transition: all .2s;
-  &:hover:not(:disabled) { background: $bg; color: $danger; border-color: $danger; }
   &:disabled { opacity: .55; cursor: not-allowed; }
   .material-symbols-outlined { font-size: 18px; }
 }
 
-// ── Reorder card ──────────────────────────────────────────────────────────────
+// Reorder Card
 .reorder-card {
   background: $white;
   border-radius: $radius;
@@ -81,13 +69,13 @@ $radius:    12px;
   padding: 1.5rem;
 }
 
-// ── Add section ───────────────────────────────────────────────────────────────
+// Add Section
 .add-section {
   display: flex; gap: .75rem; align-items: stretch;
   margin-bottom: 1.5rem; flex-wrap: wrap;
 
   .add-select-wrap {
-    flex: 1; min-width: 200px;
+    flex: 1; min-width: 250px;
     position: relative;
     display: flex; align-items: center;
 
@@ -114,32 +102,28 @@ $radius:    12px;
     background: $success; color: $white;
     border: none; border-radius: 8px;
     font-weight: 600; font-size: .9rem; cursor: pointer;
-    transition: all .2s; white-space: nowrap;
-    &:hover:not(:disabled) { background: #059669; transform: translateY(-1px); }
-    &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    white-space: nowrap;
+    &:hover:not(:disabled) { background: #059669; }
+    &:disabled { opacity: .55; cursor: not-allowed; }
     .material-symbols-outlined { font-size: 18px; }
   }
 }
 
-// ── Table wrapper ─────────────────────────────────────────────────────────────
+// Table Wrapper
 .table-wrap {
   overflow-x: auto;
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────────
+// Table - Only 4 Columns
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;   // ← KEY: fixed layout makes columns respect colgroup widths
+  table-layout: fixed;
 
-  // Column widths via colgroup
-  .col-sno     { width: 48px;  }
-  .col-name    { width: auto;  }   // flexible — takes remaining space
-  .col-stock   { width: 120px; }
-  .col-min     { width: 120px; }
-  .col-qty     { width: 120px; }
-  .col-status  { width: 120px; }
-  .col-actions { width: 96px;  }
+  .col-sno     { width: 60px; }
+  .col-name    { width: auto; }
+  .col-qty     { width: 140px; }
+  .col-actions { width: 100px; }
 
   thead tr {
     background: linear-gradient(135deg, $primary, $secondary);
@@ -150,7 +134,6 @@ table {
       color: $white; text-align: left;
       white-space: nowrap;
       &.th-center { text-align: center; }
-
       &:first-child { border-radius: 8px 0 0 0; }
       &:last-child  { border-radius: 0 8px 0 0; }
     }
@@ -169,31 +152,23 @@ table {
       font-size: .9rem; color: $dark;
       border-bottom: 1px solid $border;
       vertical-align: middle;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 
       &.td-center  { text-align: center; }
-      &.td-muted   { color: $muted; text-align: center; }
       &.td-sno     { color: $muted; font-size: .8rem; text-align: center; }
-      &.td-actions { text-align: center; white-space: nowrap; }
 
       &.td-name {
         display: flex; align-items: center; gap: .5rem;
-        font-weight: 500; overflow: hidden;
-        // override table cell display for flex
-        display: table-cell;  // keep table-cell but use grid inside
-
+        font-weight: 500;
         .med-icon {
-          display: inline-block; vertical-align: middle;
-          font-size: 18px; color: $primary; margin-right: .35rem;
-          flex-shrink: 0;
+          font-size: 18px; color: $primary;
         }
       }
 
       &.td-qty {
         .qty-display {
           display: inline-block;
-          min-width: 36px;
-          padding: .3rem .6rem;
+          min-width: 60px;
+          padding: .3rem .8rem;
           background: rgba($primary,.1);
           color: $primary;
           border-radius: 6px;
@@ -203,11 +178,15 @@ table {
         }
 
         .qty-input {
-          width: 72px;
+          width: 90px;
           padding: .4rem .5rem;
-          border: 2px solid $primary; border-radius: 6px;
-          font-size: .95rem; text-align: center; font-weight: 600;
-          color: $primary; background: rgba($primary,.05);
+          border: 2px solid $primary;
+          border-radius: 6px;
+          font-size: .95rem;
+          text-align: center;
+          font-weight: 600;
+          color: $primary;
+          background: rgba($primary,.05);
           &:focus { outline: none; box-shadow: 0 0 0 3px rgba($primary,.15); }
         }
       }
@@ -221,7 +200,7 @@ table {
         padding: .85rem 1rem;
         border-top: 2px solid $border;
         font-size: .9rem;
-        &.td-foot-label { font-weight: 700; color: $dark; }
+        &.td-foot-label { font-weight: 700; color: $dark; text-align: right; }
         &.td-foot-qty   { text-align: center; font-weight: 700; color: $primary; font-size: 1.05rem; }
         &.td-foot-count { text-align: center; color: $muted; font-size: .82rem; }
       }
@@ -229,30 +208,7 @@ table {
   }
 }
 
-// ── Stock badge ───────────────────────────────────────────────────────────────
-.stock-badge {
-  display: inline-block;
-  padding: .2rem .65rem;
-  border-radius: 99px;
-  font-size: .8rem; font-weight: 600;
-
-  &.badge-out { background: #fee2e2; color: #dc2626; }
-  &.badge-low { background: #fef3c7; color: #b45309; }
-}
-
-// ── Status chip ───────────────────────────────────────────────────────────────
-.status-chip {
-  display: inline-block;
-  padding: .25rem .75rem;
-  border-radius: 99px;
-  font-size: .75rem; font-weight: 600;
-  white-space: nowrap;
-
-  &.chip-out { background: #fee2e2; color: #dc2626; }
-  &.chip-low { background: #fef3c7; color: #b45309; }
-}
-
-// ── Action icon buttons ───────────────────────────────────────────────────────
+// Icon Buttons
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px;
@@ -267,10 +223,10 @@ table {
   &.btn-cancel:hover { background: rgba($danger,.1);  color: $danger;  }
 }
 
-// ── Loading ───────────────────────────────────────────────────────────────────
+// Loading State
 .loading-state {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 4rem; color: $muted;
+  justify-content: center; padding: 3rem; color: $muted;
 
   .spinner {
     width: 36px; height: 36px;
@@ -280,29 +236,27 @@ table {
   }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// Empty State
 .empty-state {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 4rem; color: $muted; text-align: center;
+  justify-content: center; padding: 3rem; color: $muted; text-align: center;
 
   .material-symbols-outlined { font-size: 64px; opacity: .3; margin-bottom: 1rem; }
   p { margin: 0; font-size: .95rem; }
-  .hint { font-size: .82rem; margin-top: .4rem; max-width: 360px; }
+  .hint { font-size: .82rem; margin-top: .4rem; }
 }
 
-// ── Animations ────────────────────────────────────────────────────────────────
-@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes spin    { to { transform: rotate(360deg); } }
-
-// ── Responsive ───────────────────────────────────────────────────────────────
+// Responsive
 @media (max-width: 768px) {
   .page-header { flex-direction: column; align-items: flex-start; }
   .add-section { flex-direction: column; .btn-add { width: 100%; justify-content: center; } }
 
   table {
-    .col-stock, .col-min, .col-status { width: 80px; }
-    .col-qty    { width: 90px; }
-    .col-actions { width: 76px; }
+    .col-sno { width: 50px; }
+    .col-qty { width: 100px; }
+    .col-actions { width: 80px; }
     thead th, tbody td { padding: .65rem .6rem; font-size: .8rem; }
   }
 

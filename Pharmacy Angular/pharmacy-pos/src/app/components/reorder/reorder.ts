@@ -38,7 +38,10 @@ export class ReorderComponent implements OnInit, OnDestroy {
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
   ngOnInit()    { this.loadData(); }
-  ngOnDestroy() { this.isDestroyed = true; if (this.toastTimer) clearTimeout(this.toastTimer); }
+  ngOnDestroy() { 
+    this.isDestroyed = true; 
+    if (this.toastTimer) clearTimeout(this.toastTimer); 
+  }
 
   // ── Toast ─────────────────────────────────────────────────────────────────────
 
@@ -61,12 +64,18 @@ export class ReorderComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Load data ─────────────────────────────────────────────────────────────────
+  // ── Load data with persistence ─────────────────────────────────────────────────
 
   async loadData() {
-    this.isLoading = true; this.cdr.detectChanges();
+    this.isLoading = true; 
+    this.cdr.detectChanges();
+    
     try {
-      // All medicines for the dropdown (sorted by name)
+      // Load saved reorder list from localStorage
+      const savedList = localStorage.getItem('reorderList');
+      const savedTimestamp = localStorage.getItem('reorderListTimestamp');
+      
+      // Load all medicines
       const med = await this.dbRun(`
         SELECT
           m.product_id, m.name,
@@ -79,7 +88,33 @@ export class ReorderComponent implements OnInit, OnDestroy {
       `);
       this.allMedicines = med || [];
 
-      // Pre-populate reorder list with LOW STOCK items
+      // Check if we have a saved list and it's not too old (optional: keep for 7 days)
+      if (savedList && savedList !== '[]') {
+        const parsedList = JSON.parse(savedList);
+        if (parsedList.length > 0) {
+          this.reorderList = parsedList;
+          this.showToast('Previous reorder list restored', 'success');
+        } else {
+          // Load low stock items only if no saved list
+          await this.loadLowStockItems();
+        }
+      } else {
+        // First time - load low stock items
+        await this.loadLowStockItems();
+      }
+
+    } catch (e) {
+      console.error('loadData:', e);
+      this.showToast('Failed to load data', 'error');
+    } finally {
+      this.isLoading = false; 
+      this.cdr.detectChanges();
+    }
+  }
+
+  // Load low stock items (for first load)
+  async loadLowStockItems() {
+    try {
       const low = await this.dbRun(`
         SELECT
           m.product_id, m.name,
@@ -100,13 +135,18 @@ export class ReorderComponent implements OnInit, OnDestroy {
         minimum_threshold: item.minimum_threshold,
         quantity:          Math.max(Math.ceil(item.needed_quantity), 5)
       }));
-
+      
+      // Save initial list
+      this.saveToLocalStorage();
     } catch (e) {
-      console.error('loadData:', e);
-      this.showToast('Failed to load data', 'error');
-    } finally {
-      this.isLoading = false; this.cdr.detectChanges();
+      console.error('loadLowStockItems:', e);
     }
+  }
+
+  // Save reorder list to localStorage
+  private saveToLocalStorage() {
+    localStorage.setItem('reorderList', JSON.stringify(this.reorderList));
+    localStorage.setItem('reorderListTimestamp', new Date().toISOString());
   }
 
   // ── Dropdown — exclude already-added medicines ────────────────────────────────
@@ -116,14 +156,18 @@ export class ReorderComponent implements OnInit, OnDestroy {
     return this.allMedicines.filter(m => !ids.has(m.product_id));
   }
 
-  // ── Add medicine to list (FIX: forces change detection) ──────────────────────
+  // ── Add medicine to list ─────────────────────────────────────────────────────
 
   addMedicineToReorder() {
-    if (!this.selectedMedicineId) { this.showToast('Please select a medicine', 'error'); return; }
+    if (!this.selectedMedicineId) { 
+      this.showToast('Please select a medicine', 'error'); 
+      return; 
+    }
 
     const id = Number(this.selectedMedicineId);
     if (this.reorderList.some(i => i.product_id === id)) {
-      this.showToast('Medicine already in reorder list', 'error'); return;
+      this.showToast('Medicine already in reorder list', 'error'); 
+      return;
     }
 
     const med = this.allMedicines.find(m => m.product_id === id);
@@ -131,7 +175,6 @@ export class ReorderComponent implements OnInit, OnDestroy {
 
     const needed = Math.max((med.minimum_threshold || 10) - (med.current_stock || 0), 5);
 
-    // FIX: create a new array reference so Angular detects the change
     this.reorderList = [
       ...this.reorderList,
       {
@@ -144,6 +187,7 @@ export class ReorderComponent implements OnInit, OnDestroy {
     ];
 
     this.selectedMedicineId = null;
+    this.saveToLocalStorage();
     this.showToast(`${med.name} added to reorder list`);
     this.cdr.detectChanges();
   }
@@ -163,10 +207,13 @@ export class ReorderComponent implements OnInit, OnDestroy {
   }
 
   saveEdit(item: any) {
-    if (this.editQuantity < 1) { this.showToast('Quantity must be at least 1', 'error'); return; }
-    // Mutate in place then create new array ref so *ngFor re-renders
+    if (this.editQuantity < 1) { 
+      this.showToast('Quantity must be at least 1', 'error'); 
+      return; 
+    }
     item.quantity      = this.editQuantity;
     this.reorderList   = [...this.reorderList];
+    this.saveToLocalStorage();
     this.cancelEdit();
     this.showToast('Quantity updated');
   }
@@ -175,6 +222,7 @@ export class ReorderComponent implements OnInit, OnDestroy {
 
   deleteItem(item: any) {
     this.reorderList = this.reorderList.filter(i => i.product_id !== item.product_id);
+    this.saveToLocalStorage();
     this.showToast('Item removed');
     this.cdr.detectChanges();
   }
@@ -182,9 +230,12 @@ export class ReorderComponent implements OnInit, OnDestroy {
   // ── Clear all ─────────────────────────────────────────────────────────────────
 
   clearList() {
-    this.reorderList = [];
-    this.showToast('Reorder list cleared');
-    this.cdr.detectChanges();
+    if (confirm('Clear entire reorder list?')) {
+      this.reorderList = [];
+      this.saveToLocalStorage();
+      this.showToast('Reorder list cleared');
+      this.cdr.detectChanges();
+    }
   }
 
   // ── Total reorder quantity ────────────────────────────────────────────────────
@@ -193,158 +244,260 @@ export class ReorderComponent implements OnInit, OnDestroy {
     return this.reorderList.reduce((s, i) => s + (i.quantity || 0), 0);
   }
 
-  // ── Save / Print reorder bill ─────────────────────────────────────────────────
+  // ── Print reorder bill (Thermal Printer Format - 80mm) ─────────────────────────
 
-  saveToLocal() {
-    if (this.reorderList.length === 0) { this.showToast('List is empty', 'error'); return; }
+saveToLocal() {
+  if (this.reorderList.length === 0) { 
+    this.showToast('List is empty', 'error'); 
+    return; 
+  }
 
-    const today    = new Date();
-    const dateStr  = today.toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' });
-    const timeStr  = today.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
-    const serial   = 'RO-' + today.getFullYear()
-                   + String(today.getMonth() + 1).padStart(2, '0')
-                   + String(today.getDate()).padStart(2, '0')
-                   + '-' + (Math.floor(Math.random() * 9000) + 1000);
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = today.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
+  const serial = 'RO-' + today.getFullYear()
+               + String(today.getMonth() + 1).padStart(2, '0')
+               + String(today.getDate()).padStart(2, '0')
+               + '-' + (Math.floor(Math.random() * 9000) + 1000);
 
-    const rows = this.reorderList.map((item, idx) => `
-      <tr>
-        <td class="sno">${idx + 1}</td>
-        <td class="mname">${item.name}</td>
-        <td class="center bold">${item.quantity}</td>
-      </tr>`).join('');
+  const rows = this.reorderList.map((item, idx) => `
+    <tr>
+      <td class="sno">${idx + 1}</td>
+      <td class="mname">${this.escapeHtml(item.name)}</td>
+      <td class="center bold">${item.quantity}</td>
+     </tr>`).join('');
 
-    const html = `<!DOCTYPE html>
+  // Clean thermal printer format (matching sale receipt)
+  const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Reorder Bill – ${serial}</title>
-
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      font-size: 12px;
-      color: #000;
+      font-family: 'Courier New', monospace;
+      width: 80mm;
+      margin: 0 auto;
+      padding: 4mm 2mm;
+      font-size: 11px;
+      line-height: 1.4;
     }
 
-    /* Header */
+    /* Header Section */
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #000;
     }
-
     .header h2 {
-      margin: 0;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0 0 4px;
+      letter-spacing: 1px;
     }
-
     .header p {
+      font-size: 9px;
       margin: 2px 0;
-      font-size: 12px;
     }
 
-    /* Info */
-    .info {
+    /* Title */
+    .title {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .title p {
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    /* Info Section */
+    .info-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 15px;
-      font-size: 12px;
+      margin: 5px 0;
+      font-size: 9px;
+    }
+
+    /* Solid Line */
+    .solid-line {
+      border-top: 1px solid #000;
+      margin: 8px 0;
     }
 
     /* Table */
     table {
       width: 100%;
       border-collapse: collapse;
+      margin: 8px 0;
     }
-
     th, td {
-      border: 1px solid #000;
-      padding: 6px;
-    }
-
-    th {
+      padding: 6px 2px;
       text-align: left;
-      font-weight: bold;
+      border-bottom: 1px solid #ccc;
     }
-
+    th {
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      font-size: 10px;
+    }
     td.center {
       text-align: center;
-      width: 80px;
+    }
+    .sno {
+      width: 15%;
+      text-align: center;
+    }
+    .mname {
+      width: 60%;
+      word-break: break-word;
+      white-space: normal;
+    }
+    .bold {
+      font-weight: bold;
     }
 
-    /* Total */
+    /* Total Section */
     .total {
+      display: flex;
+      justify-content: space-between;
       margin-top: 10px;
-      text-align: right;
+      padding-top: 8px;
+      border-top: 1px solid #000;
       font-weight: bold;
+      font-size: 11px;
     }
 
     /* Footer */
     .footer {
-      margin-top: 30px;
       text-align: center;
-      font-size: 11px;
+      margin-top: 15px;
+      padding-top: 8px;
+      border-top: 1px solid #000;
+      font-size: 8px;
+    }
+    .footer p {
+      margin: 2px 0;
     }
 
     @media print {
       body {
-        padding: 10px;
+        margin: 0;
+        padding: 2mm;
       }
     }
   </style>
 </head>
-
 <body>
 
-  <!-- Header -->
+  <!-- Header Section (Same as Sale Receipt) -->
   <div class="header">
-    <h2>Pharmacy POS</h2>
-    <p>Reorder Bill</p>
+    <h2>PHARMACY POS</h2>
+    <p>123 Main Street, Lahore, Pakistan</p>
+    <p>Phone: 0300-1234567 | Email: info@pharmacy.com</p>
   </div>
 
-  <!-- Info -->
-  <div class="info">
-    <div>Serial: ${serial}</div>
+  <!-- Title -->
+  <div class="title">
+    <p>REORDER BILL</p>
+  </div>
+
+  <!-- Info Section -->
+  <div class="info-row">
+    <div>Bill No: ${serial}</div>
     <div>Date: ${dateStr}</div>
+  </div>
+  <div class="info-row">
     <div>Time: ${timeStr}</div>
+    <div>Items: ${this.reorderList.length}</div>
   </div>
 
-  <!-- Table -->
+  <div class="solid-line"></div>
+
+  <!-- Table - Only 3 Columns -->
   <table>
     <thead>
       <tr>
-        <th>#</th>
-        <th>Medicine Name</th>
+        <th class="sno">#</th>
+        <th class="mname">Medicine Name</th>
         <th class="center">Qty</th>
-      </tr>
-    </thead>
+      </thead>
     <tbody>
       ${rows}
     </tbody>
   </table>
 
-  <!-- Total -->
+  <div class="solid-line"></div>
+
+  <!-- Total Section -->
   <div class="total">
-    Total Qty: ${this.totalQuantity}
+    <span>TOTAL ITEMS</span>
+    <span>${this.totalQuantity}</span>
   </div>
 
-  <!-- Footer -->
+  <div class="solid-line"></div>
+
+  <!-- Footer (Same as Sale Receipt) -->
   <div class="footer">
-    Generated by Pharmacy POS
+    <p><strong>THANK YOU!</strong></p>
+    <p>Visit Again</p>
+    <p>GST: 12-345678-9</p>
   </div>
 
   <script>
-    window.onload = () => window.print();
+    window.onload = () => {
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => window.close(), 500);
+      }, 100);
+    };
   </script>
 
 </body>
 </html>`;
 
-    const win = window.open('', '_blank', 'width=900,height=700');
-    if (!win) { this.showToast('Pop-up blocked — please allow pop-ups', 'error'); return; }
-    win.document.write(html);
-    win.document.close();
-    this.showToast('Reorder bill opened for printing!');
+  // Open print window
+  const win = window.open('', '_blank', 'width=400,height=600,toolbar=no,menubar=no');
+  if (!win) { 
+    this.showToast('Pop-up blocked — please allow pop-ups', 'error'); 
+    return; 
+  }
+  
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  
+  this.showToast('Reorder bill opened for printing!');
+}
+private escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+  // ── Clear saved list manually (optional) ─────────────────────────────────────
+
+  clearSavedList() {
+    if (confirm('Clear saved reorder list? This cannot be undone.')) {
+      localStorage.removeItem('reorderList');
+      localStorage.removeItem('reorderListTimestamp');
+      this.reorderList = [];
+      this.showToast('Saved list cleared');
+      this.cdr.detectChanges();
+    }
   }
 
   // ── Misc ──────────────────────────────────────────────────────────────────────

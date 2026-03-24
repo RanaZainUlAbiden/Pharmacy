@@ -1,29 +1,20 @@
-<!-- ══════════════════════════════════════════════════════════════════ Toast -->
+<!-- Toast -->
 <div class="toast-container" *ngIf="toast">
-  <div class="toast"
-       [class.toast-success]="toast.type === 'success'"
-       [class.toast-error]="toast.type === 'error'">
-    <span class="material-symbols-outlined">
-      {{ toast.type === 'success' ? 'check_circle' : 'error' }}
-    </span>
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
     <span>{{ toast.message }}</span>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════════ Header -->
+<!-- Header -->
 <div class="page-header">
   <div class="header-left">
     <h1>
       <span class="material-symbols-outlined">reorder</span>
       Reorder Management
     </h1>
-    <p class="page-sub">Low-stock medicines are pre-loaded automatically</p>
   </div>
   <div class="header-right">
-    <button class="btn-secondary" (click)="clearList()" [disabled]="reorderList.length === 0">
-      <span class="material-symbols-outlined">delete_sweep</span>
-      Clear All
-    </button>
     <button class="btn-primary" (click)="saveToLocal()" [disabled]="reorderList.length === 0">
       <span class="material-symbols-outlined">print</span>
       Print Bill
@@ -31,84 +22,62 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════ Main card -->
+<!-- Main Card -->
 <div class="reorder-card">
 
-  <!-- Add medicine row -->
+  <!-- Add Medicine Section -->
   <div class="add-section">
     <div class="add-select-wrap">
       <span class="material-symbols-outlined select-icon">medication</span>
-      <select class="medicine-select"
-              [(ngModel)]="selectedMedicineId">
+      <select class="medicine-select" [(ngModel)]="selectedMedicineId">
         <option [ngValue]="null">— Select medicine to add —</option>
         <option *ngFor="let m of availableMedicines" [ngValue]="m.product_id">
-          {{ m.name }}&nbsp;&nbsp;|&nbsp;&nbsp;Stock: {{ m.current_stock || 0 }}&nbsp;&nbsp;Min: {{ m.minimum_threshold || 0 }}
+          {{ m.name }}
         </option>
       </select>
     </div>
-    <button class="btn-add"
-            (click)="addMedicineToReorder()"
-            [disabled]="!selectedMedicineId">
+    <button class="btn-add" (click)="addMedicineToReorder()" [disabled]="!selectedMedicineId">
       <span class="material-symbols-outlined">add</span>
       Add
     </button>
   </div>
 
-  <!-- Loading -->
+  <!-- Loading State -->
   <div class="loading-state" *ngIf="isLoading">
     <div class="spinner"></div>
-    <p>Loading medicines…</p>
+    <p>Loading medicines...</p>
   </div>
 
-  <!-- Table -->
+  <!-- Table - Only 3 Columns -->
   <div class="table-wrap" *ngIf="!isLoading">
     <table *ngIf="reorderList.length > 0; else emptyTpl">
       <colgroup>
         <col class="col-sno">
         <col class="col-name">
-        <col class="col-stock">
-        <col class="col-min">
         <col class="col-qty">
-        <col class="col-status">
         <col class="col-actions">
       </colgroup>
       <thead>
         <tr>
           <th class="th-center">#</th>
           <th>Medicine Name</th>
-          <th class="th-center">Current Stock</th>
-          <th class="th-center">Min. Threshold</th>
-          <th class="th-center">Reorder Qty</th>
-          <th class="th-center">Status</th>
+          <th class="th-center">Reorder Quantity</th>
           <th class="th-center">Actions</th>
-        </tr>
-      </thead>
+        </thead>
       <tbody>
         <tr *ngFor="let item of reorderList; let i = index; trackBy: trackById"
             [class.row-editing]="editingItemId === item.product_id">
-
-          <!-- Serial -->
+          
+          <!-- Serial Number -->
           <td class="td-center td-sno">{{ i + 1 }}</td>
-
-          <!-- Name -->
+          
+          <!-- Medicine Name -->
           <td class="td-name">
             <span class="material-symbols-outlined med-icon">medication</span>
             {{ item.name }}
           </td>
-
-          <!-- Current stock -->
-          <td class="td-center">
-            <span class="stock-badge"
-                  [class.badge-out]="(item.current_stock ?? 0) === 0"
-                  [class.badge-low]="(item.current_stock ?? 0) > 0">
-              {{ item.current_stock ?? 0 }}
-            </span>
-          </td>
-
-          <!-- Min threshold -->
-          <td class="td-center td-muted">{{ item.minimum_threshold ?? 0 }}</td>
-
-          <!-- Reorder qty — view or edit -->
+          
+          <!-- Reorder Quantity - Inline Editable -->
           <td class="td-center td-qty">
             <ng-container *ngIf="editingItemId !== item.product_id">
               <span class="qty-display">{{ item.quantity }}</span>
@@ -123,19 +92,9 @@
                      autofocus>
             </ng-container>
           </td>
-
-          <!-- Status -->
-          <td class="td-center">
-            <span class="status-chip"
-                  [class.chip-out]="(item.current_stock ?? 0) === 0"
-                  [class.chip-low]="(item.current_stock ?? 0) > 0">
-              {{ (item.current_stock ?? 0) === 0 ? 'Out of Stock' : 'Low Stock' }}
-            </span>
-          </td>
-
+          
           <!-- Actions -->
           <td class="td-center td-actions">
-            <!-- View mode buttons -->
             <ng-container *ngIf="editingItemId !== item.product_id">
               <button class="icon-btn btn-edit" (click)="startEdit(item)" title="Edit quantity">
                 <span class="material-symbols-outlined">edit</span>
@@ -144,12 +103,11 @@
                 <span class="material-symbols-outlined">delete</span>
               </button>
             </ng-container>
-            <!-- Edit mode buttons -->
             <ng-container *ngIf="editingItemId === item.product_id">
-              <button class="icon-btn btn-save" (click)="saveEdit(item)" title="Save (Enter)">
+              <button class="icon-btn btn-save" (click)="saveEdit(item)" title="Save">
                 <span class="material-symbols-outlined">check</span>
               </button>
-              <button class="icon-btn btn-cancel" (click)="cancelEdit()" title="Cancel (Esc)">
+              <button class="icon-btn btn-cancel" (click)="cancelEdit()" title="Cancel">
                 <span class="material-symbols-outlined">close</span>
               </button>
             </ng-container>
@@ -158,9 +116,9 @@
       </tbody>
       <tfoot>
         <tr class="footer-row">
-          <td colspan="4" class="td-foot-label">Total</td>
+          <td colspan="2" class="td-foot-label">Total Items</td>
           <td class="td-center td-foot-qty">{{ totalQuantity }}</td>
-          <td colspan="2" class="td-foot-count">{{ reorderList.length }} medicine{{ reorderList.length !== 1 ? 's' : '' }}</td>
+          <td class="td-foot-count">{{ reorderList.length }} medicine(s)</td>
         </tr>
       </tfoot>
     </table>
@@ -169,9 +127,8 @@
       <div class="empty-state">
         <span class="material-symbols-outlined">inventory_2</span>
         <p>No items in reorder list</p>
-        <p class="hint">Add medicines from the dropdown above, or all medicines may be sufficiently stocked.</p>
+        <p class="hint">Select a medicine from the dropdown above to add</p>
       </div>
     </ng-template>
   </div>
-
 </div>
