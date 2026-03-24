@@ -299,7 +299,7 @@
       </div>
       <div class="summary-info">
         <label>Total Sales</label>
-        <h2>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_spent, 0)) }}</h2>
+        <h2>{{ formatCurrency(getTotalSpent()) }}</h2>
       </div>
     </div>
     <div class="summary-card">
@@ -308,7 +308,7 @@
       </div>
       <div class="summary-info">
         <label>Total Due</label>
-        <h2 class="due">{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_due, 0)) }}</h2>
+        <h2 class="due">{{ formatCurrency(getTotalDue()) }}</h2>
       </div>
     </div>
   </div>
@@ -345,8 +345,8 @@
         <tfoot>
           <tr class="total-row">
             <td colspan="3"><strong>TOTAL</strong></td>
-            <td class="amount"><strong>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_spent, 0)) }}</strong></td>
-            <td class="amount due"><strong>{{ formatCurrency(customerData.reduce((sum, c) => sum + c.total_due, 0)) }}</strong></td>
+            <td class="amount"><strong>{{ formatCurrency(getTotalSpent()) }}</strong></td>
+            <td class="amount due"><strong>{{ formatCurrency(getTotalDue()) }}</strong></td>
             <td></td>
           </tr>
         </tfoot>

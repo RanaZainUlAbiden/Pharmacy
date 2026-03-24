@@ -114,8 +114,8 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/medicines']);
   }
 
-  goToCustomers() {
-    this.router.navigate(['/customers']);
+  goToReorder() {
+    this.router.navigate(['/reorder']);
   }
 
   goToReports() {

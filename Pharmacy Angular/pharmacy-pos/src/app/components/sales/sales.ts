@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { DatabaseService } from '../../services/database.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { SalesStateService } from '../../services/salesState.service';
+import { TaxService } from '../../services/tax.service';
 
 @Component({
   selector: 'app-sales',
@@ -23,7 +25,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   cartDiscount = 0;
   cartTax = 0;
   cartTotal = 0;
-  taxRate = 0.17; // 17%
+  taxRate = 0;
 
   // Product search
   searchQuery = '';
@@ -60,16 +62,36 @@ export class SalesComponent implements OnInit, OnDestroy {
     private db: DatabaseService,
     private router: Router,
     private zone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private salesState: SalesStateService,
+    private taxService: TaxService
   ) {}
 
   ngOnInit() {
     this.generateInvoiceNumber();
+
+    this.taxService.taxRate$.subscribe(rate => {
+      this.taxRate = rate;
+      this.calculateTax();
+    });
+
+    // Restore state
+    this.cart = this.salesState.cart;
+    this.customerName = this.salesState.customerName;
+    this.discountPercent = this.salesState.discountPercent;
+    this.paidAmount = this.salesState.paidAmount;
+
+    this.updateCartTotals();
+
     setTimeout(() => {
-      if (this.searchInput) {
-        this.searchInput.nativeElement.focus();
-      }
+      this.searchInput?.nativeElement.focus();
     }, 100);
+  }
+
+  calculateTax() {
+    this.cartTax = (this.cartSubtotal - this.cartDiscount) * (this.taxRate / 100);
+    this.cartTotal = this.cartSubtotal - this.cartDiscount + this.cartTax;
+    this.calculateChange();
   }
 
   ngOnDestroy() {
@@ -121,7 +143,6 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.invoiceNumber = `INV-${year}${month}${day}-${random}`;
   }
 
-  // Search products with keyboard navigation
   async searchProducts() {
     if (!this.searchQuery.trim() || this.searchQuery.length < 1) {
       this.searchResults = [];
@@ -152,30 +173,33 @@ export class SalesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Keyboard navigation
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    // Only handle when quantity input is NOT focused
-    if (document.activeElement === this.quantityInput?.nativeElement) {
-      return;
-    }
+    // Only handle arrow keys when search input is focused
+    if (document.activeElement !== this.searchInput?.nativeElement) return;
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (this.searchResults.length > 0) {
         this.selectedIndex = (this.selectedIndex + 1) % this.searchResults.length;
+        this.scrollToSelectedResult();
       }
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       if (this.searchResults.length > 0) {
         this.selectedIndex = (this.selectedIndex - 1 + this.searchResults.length) % this.searchResults.length;
-      }
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      if (this.selectedIndex >= 0 && this.searchResults[this.selectedIndex]) {
-        this.selectProduct(this.searchResults[this.selectedIndex]);
+        this.scrollToSelectedResult();
       }
     }
+  }
+
+  private scrollToSelectedResult() {
+    setTimeout(() => {
+      const selectedElement = document.querySelector('.search-item.selected');
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }, 0);
   }
 
   selectProduct(product: any) {
@@ -183,12 +207,14 @@ export class SalesComponent implements OnInit, OnDestroy {
       this.showToast('Out of stock!', 'error');
       return;
     }
-    
+
     this.selectedProduct = product;
     this.productQuantity = 1;
     this.showQuantityInput = true;
     
-    // Focus on quantity input
+    // Force change detection and focus quantity input
+    this.cdr.detectChanges();
+    
     setTimeout(() => {
       if (this.quantityInput) {
         this.quantityInput.nativeElement.focus();
@@ -197,8 +223,18 @@ export class SalesComponent implements OnInit, OnDestroy {
     }, 50);
   }
 
-  // Called when Enter is pressed on quantity input
+  onSearchEnter() {
+    // When Enter is pressed on search input, select the highlighted product
+    if (this.selectedIndex >= 0 && this.searchResults[this.selectedIndex]) {
+      this.selectProduct(this.searchResults[this.selectedIndex]);
+    } else if (this.searchResults.length > 0) {
+      // If no index selected but results exist, select the first one
+      this.selectProduct(this.searchResults[0]);
+    }
+  }
+
   onQuantityEnter() {
+    // When Enter is pressed on quantity input, add to cart
     this.addToCart();
   }
 
@@ -246,6 +282,9 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.searchResults = [];
     this.selectedIndex = -1;
     
+    // Force change detection to clear quantity section
+    this.cdr.detectChanges();
+    
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();
@@ -256,10 +295,16 @@ export class SalesComponent implements OnInit, OnDestroy {
   updateCartTotals() {
     this.cartSubtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
     this.cartDiscount = this.cartSubtotal * (this.discountPercent / 100);
-    this.cartTax = (this.cartSubtotal - this.cartDiscount) * this.taxRate;
+    this.cartTax = (this.cartSubtotal - this.cartDiscount) * (this.taxRate / 100);
     this.cartTotal = this.cartSubtotal - this.cartDiscount + this.cartTax;
-    
+
     this.calculateChange();
+
+    // Save state
+    this.salesState.cart = this.cart;
+    this.salesState.customerName = this.customerName;
+    this.salesState.discountPercent = this.discountPercent;
+    this.salesState.paidAmount = this.paidAmount;
   }
 
   updateQuantity(item: any, change: number) {
@@ -296,6 +341,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   onDiscountChange() {
     if (this.discountPercent < 0) this.discountPercent = 0;
     if (this.discountPercent > 100) this.discountPercent = 100;
+    this.salesState.discountPercent = this.discountPercent;
     this.updateCartTotals();
   }
 
@@ -317,11 +363,9 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.isProcessing = true;
 
     try {
-      // Get customer ID (use walk-in if no name)
-      let customerId = 1; // walk-in customer ID
+      let customerId = 1;
       
       if (this.customerName.trim()) {
-        // Check if customer exists
         let existing = await this.dbRun(
           'SELECT customer_id FROM customers WHERE full_name = ?',
           [this.customerName.trim()],
@@ -329,7 +373,6 @@ export class SalesComponent implements OnInit, OnDestroy {
         );
         
         if (!existing) {
-          // Create new customer
           const result = await this.dbRun(
             'INSERT INTO customers (full_name, phone, address) VALUES (?, ?, ?)',
             [this.customerName.trim(), '', ''],
@@ -341,7 +384,6 @@ export class SalesComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Get batch items for each medicine (FIFO)
       const saleItems = [];
       
       for (const item of this.cart) {
@@ -373,7 +415,6 @@ export class SalesComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Create sale
       const saleData = {
         customer_id: customerId,
         total_amount: this.cartTotal,
@@ -440,7 +481,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     
     doc.text(`Subtotal: PKR ${this.currentSale?.subtotal.toLocaleString()}`, 120, finalY);
     doc.text(`Discount (${this.currentSale?.discount_percent}%): -PKR ${this.currentSale?.discount.toLocaleString()}`, 120, finalY + 7);
-    doc.text(`Tax (17%): PKR ${this.currentSale?.tax.toLocaleString()}`, 120, finalY + 14);
+    doc.text(`Tax (${this.taxRate}%): PKR ${this.currentSale?.tax.toLocaleString()}`, 120, finalY + 14);
     doc.text(`Total: PKR ${this.currentSale?.total.toLocaleString()}`, 120, finalY + 24);
     doc.text(`Paid: PKR ${this.currentSale?.paid.toLocaleString()}`, 120, finalY + 31);
     doc.text(`Change: PKR ${this.currentSale?.change.toLocaleString()}`, 120, finalY + 38);
@@ -475,5 +516,114 @@ export class SalesComponent implements OnInit, OnDestroy {
       currency: 'PKR',
       minimumFractionDigits: 0
     }).format(amount || 0);
+  }
+
+  async saveSaleOnly(showPrint = false) {
+    if (this.cart.length === 0) {
+      this.showToast('Cart is empty', 'error');
+      return;
+    }
+
+    if (this.paidAmount < this.cartTotal) {
+      this.showToast('Insufficient payment', 'error');
+      return;
+    }
+
+    this.isProcessing = true;
+
+    try {
+      let customerId = 1;
+
+      if (this.customerName.trim()) {
+        let existing = await this.dbRun(
+          'SELECT customer_id FROM customers WHERE full_name = ?',
+          [this.customerName.trim()],
+          'get'
+        );
+
+        if (!existing) {
+          const result = await this.dbRun(
+            'INSERT INTO customers (full_name, phone, address) VALUES (?, ?, ?)',
+            [this.customerName.trim(), '', ''],
+            'run'
+          );
+          customerId = (result as any).lastID;
+        } else {
+          customerId = existing.customer_id;
+        }
+      }
+
+      const saleItems = [];
+
+      for (const item of this.cart) {
+        const batches = await this.dbRun(`
+          SELECT batch_item_id, quantity_remaining
+          FROM batch_items
+          WHERE product_id = ? AND quantity_remaining > 0
+          ORDER BY expiry_date ASC
+        `, [item.product_id]);
+
+        let remainingQty = item.quantity;
+
+        for (const batch of batches) {
+          if (remainingQty <= 0) break;
+
+          const qtyToTake = Math.min(remainingQty, batch.quantity_remaining);
+          saleItems.push({
+            batch_item_id: batch.batch_item_id,
+            quantity: qtyToTake,
+            price: item.price,
+            discount: 0
+          });
+
+          remainingQty -= qtyToTake;
+        }
+      }
+
+      const saleData = {
+        customer_id: customerId,
+        total_amount: this.cartTotal,
+        paid_amount: this.paidAmount
+      };
+
+      // @ts-ignore
+      const saleId = await window.electronAPI.database.createSale(saleData, saleItems);
+
+      this.currentSale = {
+        id: saleId,
+        invoice_number: this.invoiceNumber,
+        customer: this.customerName || 'Walk-in Customer',
+        date: new Date(),
+        items: [...this.cart],
+        subtotal: this.cartSubtotal,
+        discount: this.cartDiscount,
+        tax: this.cartTax,
+        total: this.cartTotal,
+        paid: this.paidAmount,
+        change: this.change,
+        discount_percent: this.discountPercent
+      };
+
+      this.showToast('Sale saved successfully');
+
+      if (showPrint) {
+        this.printReceipt();
+      }
+
+      this.newSale();
+
+    } catch (err: any) {
+      this.showToast(err.message || 'Error saving sale', 'error');
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  saveSale() {
+    this.saveSaleOnly(false);
+  }
+
+  saveAndPrint() {
+    this.saveSaleOnly(true);
   }
 }

@@ -1,336 +1,311 @@
-$primary-color: #667eea;
-$secondary-color: #764ba2;
-$success-color: #10b981;
-$danger-color: #ef4444;
-$text-dark: #1f2937;
-$text-light: #6b7280;
-$border-color: #e5e7eb;
-$bg-light: #f9fafb;
-$card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+// ── Variables ─────────────────────────────────────────────────────────────────
+$primary:   #667eea;
+$secondary: #764ba2;
+$success:   #10b981;
+$danger:    #ef4444;
+$warning:   #f59e0b;
+$dark:      #1f2937;
+$muted:     #6b7280;
+$border:    #e5e7eb;
+$bg:        #f9fafb;
+$white:     #ffffff;
+$shadow:    0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+$radius:    12px;
 
-// Toast
+// ── Toast ─────────────────────────────────────────────────────────────────────
 .toast-container {
-  position: fixed;
-  top: 1.5rem; right: 1.5rem;
-  z-index: 9999;
-  animation: slideIn 0.3s ease;
+  position: fixed; top: 1.25rem; right: 1.25rem;
+  z-index: 9999; animation: slideIn .3s ease;
 }
-
 .toast {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  min-width: 280px;
+  display: flex; align-items: center; gap: .75rem;
+  padding: .9rem 1.4rem; border-radius: 10px;
+  font-size: .9rem; font-weight: 500; min-width: 260px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
 
-  .material-symbols-outlined { font-size: 22px; }
-
-  &.toast-success {
-    background: #ecfdf5; color: #065f46; border-left: 4px solid $success-color;
-    .material-symbols-outlined { color: $success-color; }
-  }
-  &.toast-error {
-    background: #fef2f2; color: #991b1b; border-left: 4px solid $danger-color;
-    .material-symbols-outlined { color: $danger-color; }
-  }
+  &.toast-success { background: #ecfdf5; color: #065f46; border-left: 4px solid $success;
+    .material-symbols-outlined { color: $success; } }
+  &.toast-error   { background: #fef2f2; color: #991b1b; border-left: 4px solid $danger;
+    .material-symbols-outlined { color: $danger; } }
 }
 
-@keyframes slideIn {
-  from { transform: translateX(110%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-// Page Header
+// ── Page header ───────────────────────────────────────────────────────────────
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
 
   .header-left {
     h1 {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 0;
-      font-size: 1.8rem;
-      color: $text-dark;
-      span { font-size: 32px; color: $primary-color; }
+      display: flex; align-items: center; gap: .6rem;
+      margin: 0; font-size: 1.75rem; color: $dark;
+      .material-symbols-outlined { font-size: 30px; color: $primary; }
     }
+    .page-sub { margin: .25rem 0 0 2.6rem; font-size: .82rem; color: $muted; }
+  }
+
+  .header-right {
+    display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
   }
 }
 
-// Reorder Container
-.reorder-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: $card-shadow;
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .65rem 1.25rem;
+  background: linear-gradient(135deg, $primary, $secondary);
+  color: $white; border: none; border-radius: 8px;
+  font-weight: 600; font-size: .9rem; cursor: pointer;
+  transition: all .2s;
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba($primary,.3); }
+  &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .65rem 1.25rem;
+  background: $white; color: $muted;
+  border: 1px solid $border; border-radius: 8px;
+  font-weight: 500; font-size: .9rem; cursor: pointer;
+  transition: all .2s;
+  &:hover:not(:disabled) { background: $bg; color: $danger; border-color: $danger; }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+// ── Reorder card ──────────────────────────────────────────────────────────────
+.reorder-card {
+  background: $white;
+  border-radius: $radius;
+  box-shadow: $shadow;
   padding: 1.5rem;
 }
 
-// Add Section
+// ── Add section ───────────────────────────────────────────────────────────────
 .add-section {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
+  display: flex; gap: .75rem; align-items: stretch;
+  margin-bottom: 1.5rem; flex-wrap: wrap;
 
-  .medicine-select {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 1px solid $border-color;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    background: white;
+  .add-select-wrap {
+    flex: 1; min-width: 200px;
+    position: relative;
+    display: flex; align-items: center;
 
-    &:focus {
-      outline: none;
-      border-color: $primary-color;
+    .select-icon {
+      position: absolute; left: .75rem;
+      font-size: 20px; color: $muted;
+      pointer-events: none;
+    }
+
+    .medicine-select {
+      width: 100%;
+      padding: .7rem 1rem .7rem 2.5rem;
+      border: 1.5px solid $border; border-radius: 8px;
+      font-size: .9rem; background: $white; color: $dark;
+      appearance: none; cursor: pointer;
+      transition: border-color .2s;
+      &:focus { outline: none; border-color: $primary; box-shadow: 0 0 0 3px rgba($primary,.1); }
     }
   }
 
   .btn-add {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: $success-color;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-
-    &:hover:not(:disabled) {
-      background: #059669;
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .7rem 1.4rem;
+    background: $success; color: $white;
+    border: none; border-radius: 8px;
+    font-weight: 600; font-size: .9rem; cursor: pointer;
+    transition: all .2s; white-space: nowrap;
+    &:hover:not(:disabled) { background: #059669; transform: translateY(-1px); }
+    &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .material-symbols-outlined { font-size: 18px; }
   }
 }
 
-// Table
-.table-container {
+// ── Table wrapper ─────────────────────────────────────────────────────────────
+.table-wrap {
   overflow-x: auto;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+// ── Table ─────────────────────────────────────────────────────────────────────
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;   // ← KEY: fixed layout makes columns respect colgroup widths
 
+  // Column widths via colgroup
+  .col-sno     { width: 48px;  }
+  .col-name    { width: auto;  }   // flexible — takes remaining space
+  .col-stock   { width: 120px; }
+  .col-min     { width: 120px; }
+  .col-qty     { width: 120px; }
+  .col-status  { width: 120px; }
+  .col-actions { width: 96px;  }
+
+  thead tr {
+    background: linear-gradient(135deg, $primary, $secondary);
     th {
-      text-align: left;
-      padding: 1rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: $text-light;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 2px solid $border-color;
-      background: $bg-light;
+      padding: .85rem 1rem;
+      font-size: .75rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: $white; text-align: left;
+      white-space: nowrap;
+      &.th-center { text-align: center; }
+
+      &:first-child { border-radius: 8px 0 0 0; }
+      &:last-child  { border-radius: 0 8px 0 0; }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background .15s;
+      &:nth-child(even) { background: #fafafa; }
+      &:hover           { background: rgba($primary,.04); }
+      &.row-editing     { background: rgba($primary,.07); }
     }
 
     td {
-      padding: 1rem;
-      font-size: 0.95rem;
-      color: $text-dark;
-      border-bottom: 1px solid $border-color;
+      padding: .85rem 1rem;
+      font-size: .9rem; color: $dark;
+      border-bottom: 1px solid $border;
       vertical-align: middle;
-    }
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 
-    .medicine-name {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
+      &.td-center  { text-align: center; }
+      &.td-muted   { color: $muted; text-align: center; }
+      &.td-sno     { color: $muted; font-size: .8rem; text-align: center; }
+      &.td-actions { text-align: center; white-space: nowrap; }
 
-      span {
-        color: $primary-color;
-        font-size: 20px;
+      &.td-name {
+        display: flex; align-items: center; gap: .5rem;
+        font-weight: 500; overflow: hidden;
+        // override table cell display for flex
+        display: table-cell;  // keep table-cell but use grid inside
+
+        .med-icon {
+          display: inline-block; vertical-align: middle;
+          font-size: 18px; color: $primary; margin-right: .35rem;
+          flex-shrink: 0;
+        }
       }
-    }
 
-    .quantity-cell {
-      .quantity-display {
-        font-weight: 500;
-        padding: 0.5rem 0;
-      }
-
-      .quantity-edit {
-        .quantity-input {
-          width: 100px;
-          padding: 0.5rem;
-          border: 2px solid $primary-color;
+      &.td-qty {
+        .qty-display {
+          display: inline-block;
+          min-width: 36px;
+          padding: .3rem .6rem;
+          background: rgba($primary,.1);
+          color: $primary;
           border-radius: 6px;
-          font-size: 0.95rem;
+          font-weight: 700;
+          font-size: 1rem;
           text-align: center;
+        }
 
-          &:focus {
-            outline: none;
-          }
+        .qty-input {
+          width: 72px;
+          padding: .4rem .5rem;
+          border: 2px solid $primary; border-radius: 6px;
+          font-size: .95rem; text-align: center; font-weight: 600;
+          color: $primary; background: rgba($primary,.05);
+          &:focus { outline: none; box-shadow: 0 0 0 3px rgba($primary,.15); }
         }
       }
     }
+  }
 
-    .actions-cell {
-      .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-      }
-    }
-
-    .icon-btn {
-      background: none;
-      border: none;
-      padding: 0.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      color: $text-light;
-      display: inline-flex;
-      align-items: center;
-
-      &:hover {
-        background: $bg-light;
-      }
-
-      &.edit:hover {
-        color: $primary-color;
-      }
-
-      &.delete:hover {
-        color: $danger-color;
-      }
-
-      &.save:hover {
-        color: $success-color;
-      }
-
-      &.cancel:hover {
-        color: $danger-color;
-      }
-    }
-
-    .total-row {
-      background: $bg-light;
-
+  tfoot {
+    .footer-row {
+      background: $bg;
       td {
-        border-top: 2px solid $border-color;
-        font-weight: 600;
+        padding: .85rem 1rem;
+        border-top: 2px solid $border;
+        font-size: .9rem;
+        &.td-foot-label { font-weight: 700; color: $dark; }
+        &.td-foot-qty   { text-align: center; font-weight: 700; color: $primary; font-size: 1.05rem; }
+        &.td-foot-count { text-align: center; color: $muted; font-size: .82rem; }
       }
     }
   }
 }
 
-// Loading State
+// ── Stock badge ───────────────────────────────────────────────────────────────
+.stock-badge {
+  display: inline-block;
+  padding: .2rem .65rem;
+  border-radius: 99px;
+  font-size: .8rem; font-weight: 600;
+
+  &.badge-out { background: #fee2e2; color: #dc2626; }
+  &.badge-low { background: #fef3c7; color: #b45309; }
+}
+
+// ── Status chip ───────────────────────────────────────────────────────────────
+.status-chip {
+  display: inline-block;
+  padding: .25rem .75rem;
+  border-radius: 99px;
+  font-size: .75rem; font-weight: 600;
+  white-space: nowrap;
+
+  &.chip-out { background: #fee2e2; color: #dc2626; }
+  &.chip-low { background: #fef3c7; color: #b45309; }
+}
+
+// ── Action icon buttons ───────────────────────────────────────────────────────
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: none; border: none; border-radius: 6px;
+  cursor: pointer; color: $muted;
+  transition: background .15s, color .15s;
+  .material-symbols-outlined { font-size: 18px; }
+
+  &.btn-edit:hover   { background: rgba($primary,.1); color: $primary; }
+  &.btn-delete:hover { background: rgba($danger,.1);  color: $danger;  }
+  &.btn-save:hover   { background: rgba($success,.1); color: $success; }
+  &.btn-cancel:hover { background: rgba($danger,.1);  color: $danger;  }
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
 .loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: $text-light;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 4rem; color: $muted;
 
   .spinner {
-    width: 40px; height: 40px;
-    border: 3px solid $border-color;
-    border-top-color: $primary-color;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
+    width: 36px; height: 36px;
+    border: 3px solid $border; border-top-color: $primary;
+    border-radius: 50%; animation: spin 1s linear infinite;
+    margin-bottom: .75rem;
   }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+// ── Empty state ───────────────────────────────────────────────────────────────
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 4rem; color: $muted; text-align: center;
+
+  .material-symbols-outlined { font-size: 64px; opacity: .3; margin-bottom: 1rem; }
+  p { margin: 0; font-size: .95rem; }
+  .hint { font-size: .82rem; margin-top: .4rem; max-width: 360px; }
 }
 
-// Empty State
-.empty-reorder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: $text-light;
-  text-align: center;
+// ── Animations ────────────────────────────────────────────────────────────────
+@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes spin    { to { transform: rotate(360deg); } }
 
-  span {
-    font-size: 64px;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-
-  p {
-    margin: 0;
-  }
-
-  .hint {
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-  }
-}
-
-// Buttons
-.btn-primary {
-  background: linear-gradient(135deg, $primary-color, $secondary-color);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba($primary-color,0.3);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-// Responsive
+// ── Responsive ───────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
-  .add-section {
-    flex-direction: column;
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .add-section { flex-direction: column; .btn-add { width: 100%; justify-content: center; } }
 
-    .medicine-select {
-      width: 100%;
-    }
-
-    .btn-add {
-      width: 100%;
-      justify-content: center;
-    }
+  table {
+    .col-stock, .col-min, .col-status { width: 80px; }
+    .col-qty    { width: 90px; }
+    .col-actions { width: 76px; }
+    thead th, tbody td { padding: .65rem .6rem; font-size: .8rem; }
   }
 
-  .table-container {
-    table {
-      th, td {
-        padding: 0.75rem;
-      }
-
-      .quantity-edit .quantity-input {
-        width: 70px;
-      }
-    }
-  }
-
-  .toast-container {
-    right: 1rem; left: 1rem; top: 1rem;
-    .toast { min-width: unset; width: 100%; }
-  }
+  .toast-container { right: 1rem; left: 1rem; top: 1rem;
+    .toast { min-width: unset; width: 100%; } }
 }

@@ -653,3 +653,76 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     .toast { min-width: unset; width: 100%; } 
   }
 }
+// ── Add these rules to your existing purchases.scss ──────────────────────────
+// (paste at the bottom of the file)
+
+// Edit mode notice banner
+.edit-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  color: #92400e;
+
+  .material-symbols-outlined { font-size: 20px; color: #f59e0b; }
+  strong { color: #78350f; }
+}
+
+// "existing" tag shown on items loaded from DB in edit mode
+.existing-item {
+  background: rgba(102, 126, 234, 0.04);
+}
+
+.existing-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  background: rgba(102, 126, 234, 0.12);
+  color: #667eea;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+// Danger button (used in header on details page)
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+// Status badge colours (in case they aren't already defined)
+.status-paid    { background: #d1fae5; color: #065f46; }
+.status-partial { background: #fef3c7; color: #92400e; }
+.status-unpaid  { background: #fee2e2; color: #991b1b; }
+
+// Stock badges
+.badge-ok  { background: #d1fae5; color: #065f46; }
+.badge-out { background: #fee2e2; color: #991b1b; }

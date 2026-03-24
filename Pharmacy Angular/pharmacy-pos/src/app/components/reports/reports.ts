@@ -74,6 +74,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
     this.isDestroyed = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
   }
+  getTotalSpent(): number {
+  return this.customerData.reduce((sum, c) => sum + c.total_spent, 0);
+}
+
+getTotalDue(): number {
+  return this.customerData.reduce((sum, c) => sum + c.total_due, 0);
+}
 
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;

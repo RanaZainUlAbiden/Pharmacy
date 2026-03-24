@@ -52,16 +52,6 @@
       <span class="stat-value" [class.text-danger]="expiringCount > 0">{{ expiringCount }}</span>
     </div>
   </div>
-
-  <div class="stat-card" *ngIf="!loading.stats">
-    <div class="stat-icon customers">
-      <span class="material-symbols-outlined">people</span>
-    </div>
-    <div class="stat-details">
-      <span class="stat-label">Total Customers</span>
-      <span class="stat-value">{{ totalCustomers }}</span>
-    </div>
-  </div>
 </div>
 
 <!-- Two Column Layout -->
@@ -96,11 +86,6 @@
                     [class.badge-warning]="sale.paid_amount < sale.total_amount">
                 {{ sale.paid_amount >= sale.total_amount ? 'Paid' : 'Partial' }}
               </span>
-            </td>
-            <td>
-              <button class="icon-btn" (click)="viewSale(sale.sale_id)">
-                <span class="material-symbols-outlined">visibility</span>
-              </button>
             </td>
           </tr>
         </tbody>
@@ -177,9 +162,9 @@
         <span class="material-symbols-outlined">add</span>
         <span>Add Medicine</span>
       </button>
-      <button class="action-btn" (click)="goToCustomers()">
+      <button class="action-btn" (click)="goToReorder()">
         <span class="material-symbols-outlined">person_add</span>
-        <span>Add Customer</span>
+        <span>Re-Order</span>
       </button>
       <button class="action-btn" (click)="goToReports()">
         <span class="material-symbols-outlined">receipt</span>

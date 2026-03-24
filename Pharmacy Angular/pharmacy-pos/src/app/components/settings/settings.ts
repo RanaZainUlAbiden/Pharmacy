@@ -2,6 +2,7 @@ import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService } from '../../services/database.service';
+import { TaxService } from '../../services/tax.service';
 
 @Component({
   selector: 'app-settings',
@@ -56,7 +57,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   constructor(
     private db: DatabaseService,
     private zone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private taxService: TaxService
   ) {
     const user = localStorage.getItem('currentUser');
     if (user) {
@@ -135,10 +137,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
-  saveCompanySettings() {
-    localStorage.setItem('companySettings', JSON.stringify(this.companySettings));
-    this.showToast('Company settings saved');
-  }
+saveCompanySettings() {
+  localStorage.setItem('companySettings', JSON.stringify(this.companySettings));
+
+  // ✅ IMPORTANT: Notify all components
+  this.taxService.setTaxRate(this.companySettings.taxRate);
+
+  this.showToast('Company settings saved');
+}
 
   saveNotificationSettings() {
     localStorage.setItem('notificationSettings', JSON.stringify(this.notifications));

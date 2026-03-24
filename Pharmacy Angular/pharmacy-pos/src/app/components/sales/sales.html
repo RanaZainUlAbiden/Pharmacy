@@ -1,4 +1,4 @@
-<!-- Toast -->
+<!-- Toast Container -->
 <div class="toast-container" *ngIf="toast">
   <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
     <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
@@ -15,7 +15,7 @@
       <h2>
         <span class="material-symbols-outlined">search</span>
         Search Medicine
-        <small>Use ↑/↓ arrows, Enter to select</small>
+        <small>Use ↑/↓ arrows, Enter to select product</small>
       </h2>
       
       <div class="search-box">
@@ -26,6 +26,7 @@
           placeholder="Type medicine name..." 
           [(ngModel)]="searchQuery"
           (input)="searchProducts()"
+          (keydown.enter)="onSearchEnter()"
           autofocus>
       </div>
       
@@ -43,7 +44,7 @@
         </div>
       </div>
       
-      <!-- Quantity Input (appears after product selection) -->
+      <!-- Quantity Input (appears after product selection via Enter or click) -->
       <div class="quantity-section" *ngIf="showQuantityInput && selectedProduct">
         <div class="quantity-box">
           <label>Quantity for {{ selectedProduct.name }}:</label>
@@ -53,6 +54,7 @@
             class="quantity-input" 
             [(ngModel)]="productQuantity" 
             min="1"
+            [max]="selectedProduct.current_stock"
             (keyup.enter)="onQuantityEnter()">
           <button class="btn-add" (click)="addToCart()">Add to Cart</button>
         </div>
@@ -140,7 +142,7 @@
       </div>
       
       <div class="total-row">
-        <span>Tax (17%)</span>
+        <span>Tax ({{ taxRate }}%)</span>
         <span class="amount">{{ formatCurrency(cartTax) }}</span>
       </div>
       
@@ -170,36 +172,13 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-      <button class="btn-secondary" (click)="clearCart()" [disabled]="cart.length === 0">
-        <span class="material-symbols-outlined">clear</span>
-        Clear Cart
+      <button class="btn-secondary" (click)="saveSale()" [disabled]="cart.length === 0">
+        <span class="material-symbols-outlined">save</span>
+        Save
       </button>
-      <button class="btn-primary" (click)="processSale()" [disabled]="cart.length === 0 || paidAmount < cartTotal">
-        <span class="material-symbols-outlined">payments</span>
-        Complete Sale
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Success Dialog -->
-<div class="modal-overlay" *ngIf="showSuccessDialog">
-  <div class="modal-content success-modal">
-    <div class="success-icon">
-      <span class="material-symbols-outlined">check_circle</span>
-    </div>
-    <h3>Sale Completed!</h3>
-    <p>Invoice #{{ currentSale?.invoice_number }}</p>
-    <p class="sale-total">Total: {{ formatCurrency(currentSale?.total) }}</p>
-    
-    <div class="action-buttons">
-      <button class="btn-secondary" (click)="printReceipt()">
+      <button class="btn-primary" (click)="saveAndPrint()" [disabled]="cart.length === 0 || paidAmount < cartTotal">
         <span class="material-symbols-outlined">print</span>
-        Print Receipt
-      </button>
-      <button class="btn-primary" (click)="newSale()">
-        <span class="material-symbols-outlined">add</span>
-        New Sale
+        Save & Print
       </button>
     </div>
   </div>

@@ -42,7 +42,7 @@
     <h1>
       <span class="material-symbols-outlined">shopping_cart</span>
       <span *ngIf="!showForm && viewMode === 'list'">Purchases</span>
-      <span *ngIf="showForm  && viewMode === 'add'">New Purchase Batch</span>
+      <span *ngIf="showForm">{{ formTitle }}</span>
       <span *ngIf="!showForm && viewMode === 'details'">Purchase Details</span>
     </h1>
   </div>
@@ -54,6 +54,16 @@
     </div>
     <button class="btn-primary" (click)="showAddForm()" [disabled]="isBusy">
       <span class="material-symbols-outlined">add</span> New Purchase
+    </button>
+  </div>
+
+  <!-- Edit/Delete buttons visible on details page -->
+  <div class="header-right" *ngIf="!showForm && viewMode === 'details' && selectedPurchase">
+    <button class="btn-secondary" (click)="showEditForm(selectedPurchase)" [disabled]="isBusy">
+      <span class="material-symbols-outlined">edit</span> Edit
+    </button>
+    <button class="btn-danger" (click)="deletePurchase(selectedPurchase)" [disabled]="isBusy">
+      <span class="material-symbols-outlined">delete</span> Delete
     </button>
   </div>
 </div>
@@ -93,6 +103,12 @@
             <button class="icon-btn" (click)="showDetails(p)" [disabled]="isBusy" title="View">
               <span class="material-symbols-outlined">visibility</span>
             </button>
+            <button class="icon-btn" (click)="showEditForm(p)" [disabled]="isBusy" title="Edit">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="icon-btn delete" (click)="deletePurchase(p)" [disabled]="isBusy" title="Delete">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
           </td>
         </tr>
       </tbody>
@@ -100,9 +116,16 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════ Add Purchase Form -->
-<div class="content-card" *ngIf="showForm && viewMode === 'add'" [attr.data-key]="formKey">
-  <form class="purchase-form" #purchaseForm="ngForm" (ngSubmit)="createPurchase()">
+<!-- ════════════════════════════════════════ Add / Edit Purchase Form -->
+<div class="content-card" *ngIf="showForm && (viewMode === 'add' || viewMode === 'edit')" [attr.data-key]="formKey">
+
+  <!-- Edit mode notice -->
+  <div class="edit-notice" *ngIf="viewMode === 'edit'">
+    <span class="material-symbols-outlined">info</span>
+    Editing batch <strong>{{ formBatchName }}</strong> — existing items will be replaced with the items below on save.
+  </div>
+
+  <form class="purchase-form" #purchaseForm="ngForm" (ngSubmit)="onFormSubmit()">
 
     <!-- Batch Info ─────────────────────────────────────────────────────────── -->
     <div class="form-section">
@@ -121,7 +144,6 @@
 
         <div class="form-group">
           <label>Supplier <span class="req">*</span></label>
-          <!-- [ngValue] keeps the value as a number, not a string -->
           <select class="form-control"
                   [(ngModel)]="formCompanyId" name="companyId" required>
             <option [ngValue]="null">Select Supplier</option>
@@ -153,12 +175,10 @@
     <div class="form-section">
       <h3 class="section-title">
         <span class="material-symbols-outlined">add_shopping_cart</span>
-        Add Items
+        Items
       </h3>
 
       <div class="item-row">
-
-        <!-- Medicine — [ngValue] keeps product_id as number -->
         <div class="form-group flex-2">
           <label>Medicine <span class="req">*</span></label>
           <select class="form-control"
@@ -170,36 +190,23 @@
           </select>
         </div>
 
-        <!-- Quantity — (input) event avoids Angular form string-coercion -->
         <div class="form-group">
           <label>Quantity <span class="req">*</span></label>
-          <input type="number"
-                 class="form-control"
-                 name="itemQty"
-                 [value]="itemQuantity"
-                 (input)="onQuantityInput($event)"
-                 min="1"
-                 step="1">
+          <input type="number" class="form-control" name="itemQty"
+                 [value]="itemQuantity" (input)="onQuantityInput($event)"
+                 min="1" step="1">
         </div>
 
-        <!-- Purchase Price — same pattern: [value] + (input) -->
         <div class="form-group">
           <label>Purchase Price <span class="req">*</span></label>
-          <input type="number"
-                 class="form-control"
-                 name="itemPrice"
-                 [value]="itemPurchasePrice"
-                 (input)="onPriceInput($event)"
-                 min="0"
-                 step="0.01">
+          <input type="number" class="form-control" name="itemPrice"
+                 [value]="itemPurchasePrice" (input)="onPriceInput($event)"
+                 min="0" step="0.01" placeholder="0">
         </div>
 
-        <!-- Expiry Date -->
         <div class="form-group">
           <label>Expiry Date <span class="req">*</span></label>
-          <input type="date"
-                 class="form-control"
-                 name="itemExpiry"
+          <input type="date" class="form-control" name="itemExpiry"
                  [(ngModel)]="itemExpiryDate">
         </div>
 
@@ -227,8 +234,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of tempItems; let i = index">
-              <td>{{ item.medicine_name }}</td>
+            <tr *ngFor="let item of tempItems; let i = index"
+                [class.existing-item]="item.existing">
+              <td>
+                {{ item.medicine_name }}
+                <span class="existing-tag" *ngIf="item.existing">existing</span>
+              </td>
               <td>{{ item.quantity }}</td>
               <td>{{ formatCurrency(item.purchase_price) }}</td>
               <td class="amount">{{ formatCurrency(item.total) }}</td>
@@ -270,13 +281,11 @@
           <label>Amount Paid</label>
           <input type="number" class="form-control"
                  [(ngModel)]="formPaid" name="paid"
-                 min="0" step="0.01"
-                 [max]="formTotalPrice">
+                 min="0" step="0.01" [max]="formTotalPrice">
         </div>
 
         <div class="form-group">
           <label>Balance Due</label>
-          <!-- Use the getter so it's always correct -->
           <input type="number" class="form-control" [value]="balanceDue" disabled>
         </div>
       </div>
@@ -289,8 +298,10 @@
       </button>
       <button type="submit" class="btn-primary"
               [disabled]="tempItems.length === 0 || isBusy || !formBatchName.trim() || !formCompanyId">
-        <span class="material-symbols-outlined">{{ isBusy ? 'hourglass_empty' : 'save' }}</span>
-        {{ isBusy ? 'Saving…' : 'Create Purchase' }}
+        <span class="material-symbols-outlined">
+          {{ isBusy ? 'hourglass_empty' : (viewMode === 'edit' ? 'update' : 'save') }}
+        </span>
+        {{ submitLabel }}
       </button>
     </div>
   </form>
@@ -302,34 +313,21 @@
     <div class="profile-info">
       <h2>{{ selectedPurchase.BatchName }}</h2>
       <div class="info-grid">
-
         <div class="info-item">
           <span class="material-symbols-outlined">business</span>
-          <div>
-            <label>Supplier</label>
-            <p>{{ selectedPurchase.company_name || '—' }}</p>
-          </div>
+          <div><label>Supplier</label><p>{{ selectedPurchase.company_name || '—' }}</p></div>
         </div>
-
         <div class="info-item">
           <span class="material-symbols-outlined">calendar_today</span>
-          <div>
-            <label>Purchase Date</label>
-            <p>{{ formatDate(selectedPurchase.purchase_date) }}</p>
-          </div>
+          <div><label>Purchase Date</label><p>{{ formatDate(selectedPurchase.purchase_date) }}</p></div>
         </div>
-
         <div class="info-item">
           <span class="material-symbols-outlined">payments</span>
           <div>
             <label>Total / Paid</label>
-            <p>
-              {{ formatCurrency(selectedPurchase.total_price) }} /
-              {{ formatCurrency(selectedPurchase.paid) }}
-            </p>
+            <p>{{ formatCurrency(selectedPurchase.total_price) }} / {{ formatCurrency(selectedPurchase.paid) }}</p>
           </div>
         </div>
-
         <div class="info-item">
           <span class="material-symbols-outlined">receipt</span>
           <div>
@@ -342,14 +340,12 @@
             </p>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
   <div class="section-title">
-    <span class="material-symbols-outlined">inventory</span>
-    Items Received
+    <span class="material-symbols-outlined">inventory</span> Items Received
   </div>
 
   <div class="table-container">
@@ -367,20 +363,14 @@
       <tbody>
         <tr *ngFor="let item of purchaseItems">
           <td class="medicine-name">
-            <span class="material-symbols-outlined">medication</span>
-            {{ item.medicine_name }}
+            <span class="material-symbols-outlined">medication</span>{{ item.medicine_name }}
           </td>
           <td>{{ item.quantity_received }}</td>
           <td>{{ formatCurrency(item.purchase_price) }}</td>
-          <td class="amount">
-            {{ formatCurrency(item.purchase_price * item.quantity_received) }}
-          </td>
-          <td [class.expired]="isExpired(item.expiry_date)">
-            {{ formatDate(item.expiry_date) }}
-          </td>
+          <td class="amount">{{ formatCurrency(item.purchase_price * item.quantity_received) }}</td>
+          <td [class.expired]="isExpired(item.expiry_date)">{{ formatDate(item.expiry_date) }}</td>
           <td>
-            <span class="stock-badge"
-                  [class]="item.quantity_remaining > 0 ? 'badge-ok' : 'badge-out'">
+            <span class="stock-badge" [class]="item.quantity_remaining > 0 ? 'badge-ok' : 'badge-out'">
               {{ item.quantity_remaining }}
             </span>
           </td>
@@ -392,10 +382,7 @@
 
 <!-- ═════════════════════════════════════════════════════════════ ng-templates -->
 <ng-template #loadingTpl>
-  <div class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading purchases…</p>
-  </div>
+  <div class="loading-state"><div class="spinner"></div><p>Loading purchases…</p></div>
 </ng-template>
 
 <ng-template #noDataTpl>
