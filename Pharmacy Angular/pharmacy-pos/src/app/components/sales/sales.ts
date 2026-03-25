@@ -6,6 +6,7 @@ import { DatabaseService } from '../../services/database.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { TaxService } from '../../services/tax.service';
+import { SalesStateService } from '../../services/salesState.service';
 
 @Component({
   selector: 'app-sales',
@@ -19,6 +20,12 @@ export class SalesComponent implements OnInit, OnDestroy {
   @ViewChild('quantityInput') quantityInput!: ElementRef;
 
   // Cart
+  companySettings: any = {
+  name: 'Pharmacy POS',
+  address: '123 Main Street, Lahore',
+  phone: '0300-1234567',
+  email: 'info@pharmacy.com'
+};
   cart: any[] = [];
   cartSubtotal = 0;
   cartDiscount = 0;
@@ -42,7 +49,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   
   // Payment
   discountPercent = 0;
-  paidAmount = 0;
+  paidAmount!:number;
   change = 0;
 
   // UI states
@@ -61,10 +68,19 @@ export class SalesComponent implements OnInit, OnDestroy {
     private router: Router,
     private zone: NgZone,
     private cdr: ChangeDetectorRef,
-    private taxService: TaxService 
+    private taxService: TaxService ,
+     public salesState: SalesStateService
   ) {}
 
+  loadCompanySettings() {
+  const saved = localStorage.getItem('companySettings');
+  if (saved) {
+    this.companySettings = JSON.parse(saved);
+  }
+}
+
   ngOnInit() {
+     this.loadCompanySettings();
     this.generateInvoiceNumber();
 
     // Listen for tax rate changes
@@ -475,181 +491,174 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.saveSaleOnly(true);
   }
 
-  printReceipt() {
-    const doc = new jsPDF({
-      unit: 'mm',
-      format: [80, 200],
-      orientation: 'portrait'
-    });
-    
-    const pageWidth = 80;
-    const margin = 5;
-    let yPos = 8;
-    
-    // Header
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PHARMACY POS', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 6;
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('123 Main Street, Lahore', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 4;
-    doc.text('Phone: 0300-1234567', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 6;
-    
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-    
-    // Invoice Details
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SALE RECEIPT', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 6;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(`Inv No: ${this.currentSale?.invoice_number}`, margin, yPos);
-    yPos += 4;
-    doc.text(`Date: ${new Date().toLocaleString()}`, margin, yPos);
-    yPos += 4;
-    doc.text(`Customer: ${this.currentSale?.customer || 'Walk-in'}`, margin, yPos);
-    yPos += 4;
-    
-    const user = localStorage.getItem('currentUser');
-    const cashier = user ? JSON.parse(user).username : 'Admin';
-    doc.text(`Cashier: ${cashier}`, margin, yPos);
-    yPos += 6;
-    
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-    
-    // Items Table
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text('Item', margin, yPos);
-    doc.text('Qty', pageWidth - 40, yPos);
-    doc.text('Price', pageWidth - 25, yPos);
-    doc.text('Total', pageWidth - 12, yPos);
-    yPos += 4;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-    
-    for (const item of this.currentSale?.items || []) {
-      let itemName = item.name;
-      if (itemName.length > 20) {
-        itemName = itemName.substring(0, 18) + '..';
-      }
-      doc.text(itemName, margin, yPos);
-      doc.text(item.quantity.toString(), pageWidth - 40, yPos);
-      doc.text(`${item.price}`, pageWidth - 25, yPos);
-      doc.text(`${item.total}`, pageWidth - 12, yPos);
-      yPos += 5;
-      
-      if (itemName.length > 15) {
-        yPos += 2;
-      }
-    }
-    
-    yPos += 2;
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-    
-    // Totals
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    doc.text('Subtotal:', pageWidth - 30, yPos);
-    doc.text(`${this.currentSale?.subtotal.toLocaleString()}`, pageWidth - 8, yPos);
+printReceipt() {
+  if (!this.currentSale) return;
+
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: [80, 200],
+    orientation: 'portrait'
+  });
+
+  const pageWidth = 80;
+  const margin = 5;
+  let yPos = 8;
+
+  const company = this.companySettings;
+
+  // ============ HEADER ============
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(company.name || 'PHARMACY POS', pageWidth / 2, yPos, { align: 'center' });
+  yPos += 6;
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  if (company.address) { doc.text(company.address, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+  if (company.phone) { doc.text(`Phone: ${company.phone}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+  if (company.email) { doc.text(`Email: ${company.email}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+
+  yPos += 2;
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 4;
+
+  // ============ INVOICE INFO ============
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('SALE RECEIPT', pageWidth / 2, yPos, { align: 'center' });
+  yPos += 6;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Inv: ${this.currentSale.invoice_number}`, margin, yPos);
+  yPos += 4;
+  doc.text(`Date: ${new Date(this.currentSale.date).toLocaleString()}`, margin, yPos);
+  yPos += 4;
+  doc.text(`Customer: ${this.currentSale.customer || 'Walk-in'}`, margin, yPos);
+  yPos += 4;
+
+  const user = localStorage.getItem('currentUser');
+  const cashier = user ? JSON.parse(user).username : 'Admin';
+  doc.text(`Cashier: ${cashier}`, margin, yPos);
+  yPos += 6;
+
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 4;
+
+  // ============ ITEMS TABLE ============
+  const colItem = margin;
+  const colQty = pageWidth - 40;
+  const colPrice = pageWidth - 25;
+  const colTotal = pageWidth - 12;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('Item', colItem, yPos);
+  doc.text('Qty', colQty, yPos);
+  doc.text('Price', colPrice, yPos);
+  doc.text('Total', colTotal, yPos);
+  yPos += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 4;
+
+  for (const item of this.currentSale.items || []) {
+    let name = item.name;
+    if (name.length > 18) name = name.substring(0, 16) + '..';
+    doc.text(name, colItem, yPos);
+    doc.text(item.quantity.toString(), colQty, yPos);
+    doc.text(this.formatCurrency(item.price), colPrice, yPos);
+    doc.text(this.formatCurrency(item.total), colTotal, yPos);
     yPos += 5;
-    
-    if (this.currentSale?.discount_percent > 0) {
-      doc.text(`Discount (${this.currentSale?.discount_percent}%):`, pageWidth - 30, yPos);
-      doc.text(`-${this.currentSale?.discount.toLocaleString()}`, pageWidth - 8, yPos);
-      yPos += 5;
-    }
-    
-    doc.text(`Tax (${this.taxRate}%):`, pageWidth - 30, yPos);
-    doc.text(`${this.currentSale?.tax.toLocaleString()}`, pageWidth - 8, yPos);
-    yPos += 5;
-    
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('TOTAL:', pageWidth - 30, yPos);
-    doc.text(`${this.currentSale?.total.toLocaleString()}`, pageWidth - 8, yPos);
-    yPos += 6;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text(`Paid: ${this.currentSale?.paid.toLocaleString()}`, pageWidth - 30, yPos);
-    yPos += 4;
-    doc.text(`Change: ${this.currentSale?.change.toLocaleString()}`, pageWidth - 30, yPos);
-    yPos += 4;
-    doc.text(`Payment: ${this.currentSale?.payment_method || 'Cash'}`, pageWidth - 30, yPos);
-    yPos += 8;
-    
-    // Footer
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 6;
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 5;
-    
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Visit Again', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 4;
-    doc.text('GST: 12-345678-9', pageWidth / 2, yPos, { align: 'center' });
-    
-    const pdfData = doc.output('dataurlstring');
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Receipt - ${this.currentSale?.invoice_number}</title>
-            <style>
-              body { margin: 0; padding: 0; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; }
-              .container { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px; padding: 20px; margin: 20px; }
-              iframe { border: none; width: 400px; height: 600px; }
-              .print-btn { margin-top: 20px; padding: 10px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 500; }
-              .print-btn:hover { background: #5a67d8; }
-              @media print { .print-btn { display: none; } body { background: white; } .container { box-shadow: none; padding: 0; margin: 0; } }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <iframe id="receiptFrame" src="${pdfData}"></iframe>
-              <button class="print-btn" onclick="printReceipt()">🖨️ Print Receipt</button>
-            </div>
-            <script>
-              function printReceipt() {
-                const iframe = document.getElementById('receiptFrame');
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-              }
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-    } else {
-      doc.save(`receipt_${this.currentSale?.invoice_number}.pdf`);
-      this.showToast('Receipt saved as PDF');
-    }
-    
-    this.showToast('Receipt preview opened');
+
+    // Page overflow check
+    if (yPos > 190) { doc.addPage(); yPos = 8; }
   }
+
+  yPos += 2;
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 4;
+
+  // ============ TOTALS ============
+  const rightX = pageWidth - margin;
+  const leftX = rightX - 35;
+
+  const totals = [
+    { label: 'Subtotal:', value: this.currentSale.subtotal },
+    { label: `Discount (${this.currentSale.discount_percent || 0}%):`, value: this.currentSale.discount },
+    { label: `Tax (${this.taxRate}%):`, value: this.currentSale.tax },
+    { label: 'TOTAL:', value: this.currentSale.total, bold: true },
+    { label: 'Paid:', value: this.currentSale.paid },
+    { label: 'Change:', value: this.currentSale.change }
+  ];
+
+  for (const t of totals) {
+    doc.setFont('helvetica', t.bold ? 'bold' : 'normal');
+    doc.setFontSize(t.bold ? 10 : 8);
+    if (t.value !== undefined && t.value !== null) {
+      doc.text(t.label, leftX, yPos);
+      doc.text(this.formatCurrency(t.value), rightX, yPos, { align: 'right' });
+      yPos += t.bold ? 6 : 5;
+    }
+  }
+
+  // Payment Method
+  if (this.currentSale.payment_method) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Payment: ${this.currentSale.payment_method}`, leftX, yPos);
+    yPos += 6;
+  }
+
+  // ============ FOOTER ============
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 6;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
+  yPos += 5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text('Visit Again', pageWidth / 2, yPos, { align: 'center' });
+  yPos += 3;
+
+  if (company.gst) {
+    doc.text(`GST: ${company.gst}`, pageWidth / 2, yPos, { align: 'center' });
+  }
+
+  // ============ PRINT ============
+  const pdfData = doc.output('dataurlstring');
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${this.currentSale.invoice_number}</title>
+          <style>
+            body { margin: 0; padding: 0; font-family: monospace; display:flex; justify-content:center; background:#f0f0f0; }
+            iframe { width:400px; height:600px; border:none; }
+            @media print { body { background:white; } iframe { width:100%; height:100%; } }
+          </style>
+        </head>
+        <body>
+          <iframe src="${pdfData}"></iframe>
+          <script>setTimeout(()=>{ document.querySelector('iframe').contentWindow.focus(); document.querySelector('iframe').contentWindow.print(); },500);</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+  } else {
+    doc.save(`receipt_${this.currentSale.invoice_number}.pdf`);
+    this.showToast('Receipt saved as PDF');
+  }
+
+  this.showToast('Receipt preview opened');
+}
 
   newSale() {
     this.cart = [];
