@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, NgZone, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DatabaseService } from '../../services/database.service';
@@ -27,7 +27,7 @@ export class PurchasesComponent implements OnInit, OnDestroy {
   searchTerm             = '';
 
   // ── Form fields (shared by add & edit) ───────────────────────────────────────
-  editingBatchId:   number | null = null;  // null = add mode, set = edit mode
+  editingBatchId:   number | null = null;
   formCompanyId:    number | null = null;
   formBatchName                   = '';
   formPurchaseDate                = new Date().toISOString().split('T')[0];
@@ -39,9 +39,13 @@ export class PurchasesComponent implements OnInit, OnDestroy {
   selectedMedicineId: number | null = null;
   selectedMedicine:   any           = null;
   itemQuantity:       number        = 1;
-  itemPurchasePrice:  number        = 0;   // ← default 0 as requested
+  itemPurchasePrice:  number        = 0;
   itemExpiryDate                    = '';
   tempItems:          any[]         = [];
+
+  // ── Medicine search ──────────────────────────────────────────────────────────
+  medicineSearchTerm       = '';
+  showMedicineSuggestions  = false;
 
   // ── UI states ────────────────────────────────────────────────────────────────
   toast: { message: string; type: 'success' | 'error' } | null = null;
@@ -66,13 +70,29 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     private stateService: PurchaseStateService
   ) {}
 
+  // ── Close suggestions on outside click ───────────────────────────────────────
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.medicine-search-wrapper')) {
+      this.closeMedicineSuggestions();
+    }
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
-  ngOnInit()    {
-     this.loadInitialData();
-  this.restoreFormState();
-    this.loadInitialData(); }
-  ngOnDestroy() { this.saveFormState(); this.isDestroyed = true; this.stopPolling(); if (this.toastTimer) clearTimeout(this.toastTimer); }
+  ngOnInit() {
+    this.loadInitialData();
+    this.restoreFormState();
+    this.loadInitialData();
+  }
+
+  ngOnDestroy() {
+    this.saveFormState();
+    this.isDestroyed = true;
+    this.stopPolling();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+  }
 
   private startPolling() {
     this.stopPolling();
@@ -82,52 +102,46 @@ export class PurchasesComponent implements OnInit, OnDestroy {
     }, this.POLL_INTERVAL);
   }
 
-private saveFormState() {
-  const state = {
-    viewMode: this.viewMode,
-    showForm: this.showForm,
-    editingBatchId: this.editingBatchId,
+  private saveFormState() {
+    const state = {
+      viewMode: this.viewMode,
+      showForm: this.showForm,
+      editingBatchId: this.editingBatchId,
+      formCompanyId: this.formCompanyId,
+      formBatchName: this.formBatchName,
+      formPurchaseDate: this.formPurchaseDate,
+      formTotalPrice: this.formTotalPrice,
+      formPaid: this.formPaid,
+      formStatus: this.formStatus,
+      tempItems: this.tempItems,
+      selectedMedicineId: this.selectedMedicineId,
+      itemQuantity: this.itemQuantity,
+      itemPurchasePrice: this.itemPurchasePrice,
+      itemExpiryDate: this.itemExpiryDate,
+      medicineSearchTerm: this.medicineSearchTerm
+    };
+    this.stateService.saveState(state);
+  }
 
-    formCompanyId: this.formCompanyId,
-    formBatchName: this.formBatchName,
-    formPurchaseDate: this.formPurchaseDate,
-    formTotalPrice: this.formTotalPrice,
-    formPaid: this.formPaid,
-    formStatus: this.formStatus,
-
-    tempItems: this.tempItems,
-
-    selectedMedicineId: this.selectedMedicineId,
-    itemQuantity: this.itemQuantity,
-    itemPurchasePrice: this.itemPurchasePrice,
-    itemExpiryDate: this.itemExpiryDate
-  };
-
-  this.stateService.saveState(state);
-}
-
-private restoreFormState() {
-  const state = this.stateService.getState();
-  if (!state) return;
-
-  this.viewMode = state.viewMode;
-  this.showForm = state.showForm;
-  this.editingBatchId = state.editingBatchId;
-
-  this.formCompanyId = state.formCompanyId;
-  this.formBatchName = state.formBatchName;
-  this.formPurchaseDate = state.formPurchaseDate;
-  this.formTotalPrice = state.formTotalPrice;
-  this.formPaid = state.formPaid;
-  this.formStatus = state.formStatus;
-
-  this.tempItems = state.tempItems || [];
-
-  this.selectedMedicineId = state.selectedMedicineId;
-  this.itemQuantity = state.itemQuantity;
-  this.itemPurchasePrice = state.itemPurchasePrice;
-  this.itemExpiryDate = state.itemExpiryDate;
-}
+  private restoreFormState() {
+    const state = this.stateService.getState();
+    if (!state) return;
+    this.viewMode = state.viewMode;
+    this.showForm = state.showForm;
+    this.editingBatchId = state.editingBatchId;
+    this.formCompanyId = state.formCompanyId;
+    this.formBatchName = state.formBatchName;
+    this.formPurchaseDate = state.formPurchaseDate;
+    this.formTotalPrice = state.formTotalPrice;
+    this.formPaid = state.formPaid;
+    this.formStatus = state.formStatus;
+    this.tempItems = state.tempItems || [];
+    this.selectedMedicineId = state.selectedMedicineId;
+    this.itemQuantity = state.itemQuantity;
+    this.itemPurchasePrice = state.itemPurchasePrice;
+    this.itemExpiryDate = state.itemExpiryDate;
+    this.medicineSearchTerm = state.medicineSearchTerm || '';
+  }
 
   private stopPolling() {
     if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
@@ -262,14 +276,12 @@ private restoreFormState() {
     this.cdr.detectChanges();
   }
 
-  // ── EDIT: load existing batch data into the form ──────────────────────────────
   async showEditForm(purchase: any) {
     if (this.isDestroyed || this.isBusy) return;
     this.stopPolling();
     this.isBusy = true; this.cdr.detectChanges();
 
     try {
-      // Load items for this batch so they appear in tempItems
       const items = await this.dbRun(`
         SELECT bi.*, m.name AS medicine_name
         FROM batch_items bi
@@ -287,16 +299,15 @@ private restoreFormState() {
       this.formStatus       = purchase.status       || 'pending';
       this.formTotalPrice   = purchase.total_price  || 0;
 
-      // Populate tempItems from existing batch_items
       this.tempItems = (items || []).map((bi: any) => ({
-        batch_item_id:  bi.batch_item_id,   // keep original ID for UPDATE
+        batch_item_id:  bi.batch_item_id,
         product_id:     bi.product_id,
         medicine_name:  bi.medicine_name,
         quantity:       bi.quantity_received,
         purchase_price: bi.purchase_price,
         total:          bi.purchase_price * bi.quantity_received,
         expiry_date:    bi.expiry_date,
-        existing:       true               // flag: row already in DB
+        existing:       true
       }));
 
       this.resetItemForm();
@@ -311,7 +322,7 @@ private restoreFormState() {
   }
 
   cancelForm() {
-     this.stateService.clearState();
+    this.stateService.clearState();
     this.showForm = false; this.viewMode = 'list';
     this.selectedPurchase = null; this.purchaseItems = [];
     this.editingBatchId   = null;
@@ -338,13 +349,70 @@ private restoreFormState() {
     this.resetItemForm();
   }
 
+  // ── Medicine Search ───────────────────────────────────────────────────────────
+
+  /** Called on every keystroke in the medicine search input */
+  onMedicineSearch() {
+    // If user types after a selection, clear the selection
+    if (this.selectedMedicineId) {
+      this.selectedMedicineId = null;
+      this.selectedMedicine   = null;
+      this.itemPurchasePrice  = 0;
+    }
+    this.showMedicineSuggestions = this.medicineSearchTerm.trim().length > 0;
+    this.cdr.detectChanges();
+  }
+
+  /** Called on focus — show suggestions if there's already text */
+  onMedicineSearchFocus() {
+    if (!this.selectedMedicineId && this.medicineSearchTerm.trim().length > 0) {
+      this.showMedicineSuggestions = true;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /** Selects a medicine from the suggestion list */
+  selectMedicine(medicine: any) {
+    this.selectedMedicineId     = medicine.product_id;
+    this.selectedMedicine       = medicine;
+    this.medicineSearchTerm     = '';          // clear the text input
+    this.showMedicineSuggestions = false;
+    this.itemPurchasePrice      = 0;           // default 0 as requested
+    this.cdr.detectChanges();
+  }
+
+  /** Clears the current medicine selection */
+  clearMedicineSelection() {
+    this.selectedMedicineId     = null;
+    this.selectedMedicine       = null;
+    this.medicineSearchTerm     = '';
+    this.itemPurchasePrice      = 0;
+    this.showMedicineSuggestions = false;
+    this.cdr.detectChanges();
+  }
+
+  /** Hides the suggestions panel */
+  closeMedicineSuggestions() {
+    this.showMedicineSuggestions = false;
+    this.cdr.detectChanges();
+  }
+
+  /** Filtered medicine list based on search term — case-insensitive, fast */
+  get filteredMedicines(): any[] {
+    const term = this.medicineSearchTerm.trim().toLowerCase();
+    if (!term) return [];
+    return this.medicines.filter(m =>
+      m.name.toLowerCase().includes(term)
+    ).slice(0, 20); // cap at 20 results for performance
+  }
+
   // ── Item row ─────────────────────────────────────────────────────────────────
 
+  /** Legacy: kept for any remaining calls, but onMedicineSearch covers the new flow */
   onMedicineSelect() {
     if (!this.selectedMedicineId) { this.selectedMedicine = null; this.itemPurchasePrice = 0; return; }
     const id = Number(this.selectedMedicineId);
     this.selectedMedicine  = this.medicines.find(m => m.product_id === id) || null;
-    // Default price = 0 as requested (not pre-filled from sale_price)
     this.itemPurchasePrice = 0;
     this.cdr.detectChanges();
   }
@@ -365,9 +433,9 @@ private restoreFormState() {
     const price = Number(this.itemPurchasePrice);
     const id    = Number(this.selectedMedicineId);
 
-    if (!qty || qty <= 0)          { this.showToast('Quantity must be greater than 0', 'error'); return; }
-    if (isNaN(price) || price <= 0){ this.showToast('Purchase price must be greater than 0', 'error'); return; }
-    if (!this.itemExpiryDate)       { this.showToast('Please select an expiry date', 'error'); return; }
+    if (!qty || qty <= 0)           { this.showToast('Quantity must be greater than 0', 'error'); return; }
+    if (isNaN(price) || price <= 0) { this.showToast('Purchase price must be greater than 0', 'error'); return; }
+    if (!this.itemExpiryDate)        { this.showToast('Please select an expiry date', 'error'); return; }
 
     const medicine = this.medicines.find(m => m.product_id === id);
     if (!medicine) { this.showToast('Selected medicine not found', 'error'); return; }
@@ -400,11 +468,13 @@ private restoreFormState() {
   }
 
   private resetItemForm() {
-    this.selectedMedicineId = null;
-    this.selectedMedicine   = null;
-    this.itemQuantity       = 1;
-    this.itemPurchasePrice  = 0;   // ← 0 default
-    this.itemExpiryDate     = '';
+    this.selectedMedicineId     = null;
+    this.selectedMedicine       = null;
+    this.medicineSearchTerm     = '';
+    this.showMedicineSuggestions = false;
+    this.itemQuantity            = 1;
+    this.itemPurchasePrice       = 0;
+    this.itemExpiryDate          = '';
   }
 
   // ── CREATE ───────────────────────────────────────────────────────────────────
@@ -419,13 +489,11 @@ private restoreFormState() {
     let success = false;
 
     try {
-      // Duplicate batch name check
       const existing = await this.dbRun(
         'SELECT purchase_batch_id FROM purchase_batches WHERE BatchName = ?',
         [this.formBatchName.trim()], 'get');
       if (existing) { this.showToast('A batch with this name already exists', 'error'); return; }
 
-      // Insert header
       const res = await this.dbRun(
         `INSERT INTO purchase_batches (company_id, purchase_date, total_price, paid, BatchName, status)
          VALUES (?, ?, ?, ?, ?, ?)`,
@@ -441,7 +509,6 @@ private restoreFormState() {
       }
       if (!batchId) throw new Error('Could not determine inserted batch ID');
 
-      // Insert items
       for (const item of this.tempItems) {
         await this.dbRun(
           `INSERT INTO batch_items (purchase_batch_id, product_id, purchase_price, quantity_received, quantity_remaining, expiry_date, created_at)
@@ -449,7 +516,6 @@ private restoreFormState() {
           [batchId, item.product_id, item.purchase_price, item.quantity, item.quantity, item.expiry_date], 'run');
       }
 
-      // Stock log (non-critical)
       try {
         for (const item of this.tempItems) {
           await this.dbRun(
@@ -463,7 +529,6 @@ private restoreFormState() {
 
     } catch (e: any) {
       console.error('createPurchase:', e);
-      // Rollback orphaned header
       if (batchId) {
         try {
           await this.dbRun('DELETE FROM batch_items WHERE purchase_batch_id = ?', [batchId], 'run');
@@ -481,7 +546,7 @@ private restoreFormState() {
       await this.delay(500);
       this.cancelForm();
     }
-    this.stateService.clearState(); // ✅ CLEAR AFTER SAVE
+    this.stateService.clearState();
   }
 
   // ── UPDATE ───────────────────────────────────────────────────────────────────
@@ -497,13 +562,11 @@ private restoreFormState() {
     let success = false;
 
     try {
-      // Duplicate name check — exclude self
       const dup = await this.dbRun(
         'SELECT purchase_batch_id FROM purchase_batches WHERE BatchName = ? AND purchase_batch_id != ?',
         [this.formBatchName.trim(), batchId], 'get');
       if (dup) { this.showToast('Another batch with this name already exists', 'error'); return; }
 
-      // Update header
       await this.dbRun(
         `UPDATE purchase_batches
          SET company_id = ?, purchase_date = ?, total_price = ?, paid = ?, BatchName = ?, status = ?
@@ -511,10 +574,6 @@ private restoreFormState() {
         [Number(this.formCompanyId), this.formPurchaseDate, this.formTotalPrice, paid, this.formBatchName.trim(), this.formStatus, batchId],
         'run');
 
-      // Strategy: delete all existing batch_items for this batch, re-insert
-      // This is safe because quantity_remaining is recalculated from scratch.
-      // For a real app with sales you'd need a more careful merge — but for
-      // new/unpaid batches this is the correct approach.
       await this.dbRun('DELETE FROM batch_items WHERE purchase_batch_id = ?', [batchId], 'run');
 
       for (const item of this.tempItems) {
@@ -539,7 +598,7 @@ private restoreFormState() {
       await this.delay(500);
       this.cancelForm();
     }
-    this.stateService.clearState(); // ✅ CLEAR AFTER SAVE
+    this.stateService.clearState();
   }
 
   // ── DELETE ───────────────────────────────────────────────────────────────────
@@ -554,14 +613,12 @@ private restoreFormState() {
           this.isBusy = true; this.cdr.detectChanges();
           try {
             const batchId = purchase.purchase_batch_id;
-            // Delete items first (FK constraint), then header
             await this.dbRun('DELETE FROM batch_items    WHERE purchase_batch_id = ?', [batchId], 'run');
             await this.dbRun('DELETE FROM purchase_batches WHERE purchase_batch_id = ?', [batchId], 'run');
 
             await this.loadPurchases(false);
             this.showToast('Purchase deleted successfully!');
 
-            // If we were viewing this batch's details, go back to list
             if (this.viewMode === 'details' && this.selectedPurchase?.purchase_batch_id === batchId)
               this.goBack();
 
@@ -642,7 +699,6 @@ private restoreFormState() {
     return Math.max(0, this.formTotalPrice - (Number(this.formPaid) || 0));
   }
 
-  // Label helpers for template
   get formTitle(): string {
     if (this.viewMode === 'edit') return 'Edit Purchase Batch';
     return 'New Purchase Batch';
