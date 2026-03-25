@@ -181,7 +181,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   gap: 0.25rem;
   justify-content: center;
   width: 100%;
-  
+
   &:hover:not(:disabled) { background: #059669; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
   span { font-size: 20px; }
@@ -290,15 +290,15 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 // Form Styles
 .purchase-form {
   max-width: 100%;
-  
+
   .form-section {
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid $border-color;
-    
+
     &:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
   }
-  
+
   .section-title {
     display: flex;
     align-items: center;
@@ -309,17 +309,17 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     margin-bottom: 1.25rem;
     span { color: $primary-color; font-size: 22px; }
   }
-  
+
   .form-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
     margin-bottom: 1rem;
   }
-  
+
   .form-group {
     margin-bottom: 0;
-    
+
     label {
       display: block;
       margin-bottom: 0.5rem;
@@ -327,7 +327,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       font-weight: 500;
       font-size: 0.9rem;
     }
-    
+
     .form-control {
       width: 100%;
       padding: 0.75rem 1rem;
@@ -336,20 +336,20 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       font-size: 0.95rem;
       transition: all 0.2s;
       box-sizing: border-box;
-      
+
       &:focus {
         outline: none;
         border-color: $primary-color;
         box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
       }
-      
+
       &:disabled {
         background: $bg-light;
         color: $text-light;
       }
     }
   }
-  
+
   // Item row for adding items
   .item-row {
     display: flex;
@@ -357,68 +357,68 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     align-items: flex-end;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    
+
     .form-group {
       flex: 1;
       min-width: 0;
-      
+
       label {
         margin-bottom: 0.5rem;
       }
     }
-    
+
     .btn-add {
       flex-shrink: 0;
       width: auto;
       min-width: 100px;
     }
   }
-  
+
   // Items table inside form
   .items-table {
     margin-top: 1.5rem;
     overflow-x: auto;
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
       min-width: 500px;
-      
+
       th, td {
         padding: 0.75rem;
         text-align: left;
         border-bottom: 1px solid $border-color;
       }
-      
+
       th {
         color: $text-light;
         font-weight: 500;
         background: $bg-light;
         font-size: 0.85rem;
       }
-      
+
       td {
         font-size: 0.9rem;
       }
-      
+
       tfoot td {
         border-top: 2px solid $border-color;
         font-weight: 600;
         background: $bg-light;
       }
-      
-      .amount { 
+
+      .amount {
         text-align: right;
         font-weight: 500;
       }
-      
-      .actions { 
+
+      .actions {
         text-align: center;
         width: 50px;
       }
     }
   }
-  
+
   .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -429,6 +429,203 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Medicine Search Autocomplete
+// ══════════════════════════════════════════════════════════════════════════════
+
+.medicine-search-wrapper {
+  position: relative; // anchor for the absolute suggestions dropdown
+  flex: 2;
+  min-width: 0;
+}
+
+// The outer border box (mimics .form-control appearance)
+.medicine-search-input-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 46px;
+  padding: 0 0.75rem;
+  gap: 0.5rem;
+  box-sizing: border-box;
+
+  &:focus-within {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
+  // Green tint when a medicine is selected
+  &.has-selection {
+    border-color: $success-color;
+    background: rgba($success-color, 0.04);
+
+    .search-icon {
+      color: $success-color;
+    }
+  }
+
+  .search-icon {
+    font-size: 20px;
+    color: $text-light;
+    flex-shrink: 0;
+    transition: color 0.2s;
+    pointer-events: none;
+  }
+
+  // The actual text input (hidden/transparent when chip is shown)
+  .medicine-search-input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 0.95rem;
+    background: transparent;
+    color: $text-dark;
+    min-width: 0;
+    width: 100%;
+
+    &::placeholder {
+      color: $text-light;
+    }
+  }
+
+  // Selected medicine shown as a pill/chip inside the input area
+  .selected-medicine-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba($primary-color, 0.1);
+    color: darken($primary-color, 10%);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 40px);
+    flex-shrink: 1;
+
+    .chip-clear {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      color: inherit;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+
+      &:hover { opacity: 1; }
+
+      .material-symbols-outlined {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+// Suggestions dropdown panel
+.medicine-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  max-height: 260px;
+  overflow-y: auto;
+  animation: dropdownIn 0.15s ease;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 3px; }
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Each suggestion row
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid rgba($border-color, 0.5);
+
+  &:last-child { border-bottom: none; }
+
+  &:hover {
+    background: rgba($primary-color, 0.06);
+
+    .suggestion-name { color: $primary-color; }
+  }
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: $text-light;
+    flex-shrink: 0;
+    transition: color 0.12s;
+  }
+
+  .suggestion-name {
+    flex: 1;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: $text-dark;
+    transition: color 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .suggestion-price {
+    font-size: 0.8rem;
+    color: $text-light;
+    font-weight: 400;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+// No results state inside dropdown
+.medicine-no-results {
+  cursor: default;
+}
+
+.no-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  color: $text-light;
+  font-size: 0.88rem;
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: $text-light;
+  }
+
+  strong { color: $text-dark; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+
 // Purchase Profile (Details View)
 .purchase-profile {
   .profile-info {
@@ -437,12 +634,12 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       font-size: 1.5rem;
       color: $text-dark;
     }
-    
+
     .info-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1rem;
-      
+
       .info-item {
         display: flex;
         align-items: center;
@@ -451,26 +648,26 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         background: $bg-light;
         border-radius: 8px;
         border: 1px solid $border-color;
-        
-        span { 
-          font-size: 28px; 
+
+        span {
+          font-size: 28px;
           color: $primary-color;
           flex-shrink: 0;
         }
-        
+
         div {
           flex: 1;
-          label { 
-            font-size: 0.75rem; 
-            color: $text-light; 
+          label {
+            font-size: 0.75rem;
+            color: $text-light;
             display: block;
             margin-bottom: 0.25rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
-          p { 
-            margin: 0; 
-            font-weight: 600; 
+          p {
+            margin: 0;
+            font-weight: 600;
             color: $text-dark;
             font-size: 1rem;
           }
@@ -521,7 +718,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   padding: 4rem;
   color: $text-light;
   text-align: center;
-  
+
   span { font-size: 64px; margin-bottom: 1rem; opacity: 0.5; }
   p { margin: 0 0 1rem; font-size: 1rem; }
   button { margin-top: 1rem; }
@@ -603,39 +800,39 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   .page-header {
     flex-direction: column;
     align-items: stretch;
-    
+
     .header-right {
       flex-direction: column;
-      
+
       .search-box {
         width: 100%;
       }
     }
   }
-  
+
   .purchase-form {
     .form-row {
       grid-template-columns: 1fr;
     }
-    
+
     .item-row {
       flex-direction: column;
       align-items: stretch;
-      
+
       .form-group {
         width: 100%;
       }
-      
+
       .btn-add {
         width: 100%;
         margin-top: 0.5rem;
       }
     }
-    
+
     .items-table {
       table {
         min-width: 100%;
-        
+
         th, td {
           padding: 0.5rem;
           font-size: 0.8rem;
@@ -643,18 +840,21 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
       }
     }
   }
-  
+
   .purchase-profile .profile-info .info-grid {
     grid-template-columns: 1fr;
   }
-  
-  .toast-container { 
-    right: 1rem; left: 1rem; top: 1rem; 
-    .toast { min-width: unset; width: 100%; } 
+
+  .toast-container {
+    right: 1rem; left: 1rem; top: 1rem;
+    .toast { min-width: unset; width: 100%; }
+  }
+
+  .medicine-search-wrapper {
+    flex: 1 1 100%;
+    width: 100%;
   }
 }
-// ── Add these rules to your existing purchases.scss ──────────────────────────
-// (paste at the bottom of the file)
 
 // Edit mode notice banner
 .edit-notice {
@@ -718,7 +918,7 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   .material-symbols-outlined { font-size: 18px; }
 }
 
-// Status badge colours (in case they aren't already defined)
+// Status badge colours
 .status-paid    { background: #d1fae5; color: #065f46; }
 .status-partial { background: #fef3c7; color: #92400e; }
 .status-unpaid  { background: #fee2e2; color: #991b1b; }

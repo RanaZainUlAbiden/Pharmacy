@@ -160,14 +160,6 @@
           <input type="date" class="form-control"
                  [(ngModel)]="formPurchaseDate" name="purchaseDate">
         </div>
-
-        <div class="form-group">
-          <label>Status</label>
-          <select class="form-control" [(ngModel)]="formStatus" name="status">
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
-          </select>
-        </div>
       </div>
     </div>
 
@@ -179,15 +171,53 @@
       </h3>
 
       <div class="item-row">
-        <div class="form-group flex-2">
+
+        <!-- ── Medicine Search (replaces dropdown) ── -->
+        <div class="form-group flex-2 medicine-search-wrapper" (clickOutside)="closeMedicineSuggestions()">
           <label>Medicine <span class="req">*</span></label>
-          <select class="form-control"
-                  name="itemMedicine"
-                  [(ngModel)]="selectedMedicineId"
-                  (ngModelChange)="onMedicineSelect()">
-            <option [ngValue]="null">Select Medicine</option>
-            <option *ngFor="let m of medicines" [ngValue]="m.product_id">{{ m.name }}</option>
-          </select>
+          <div class="medicine-search-input-wrap" [class.has-selection]="!!selectedMedicineId">
+            <span class="material-symbols-outlined search-icon">
+              {{ selectedMedicineId ? 'medication' : 'search' }}
+            </span>
+            <input
+              type="text"
+              class="form-control medicine-search-input"
+              name="itemMedicineSearch"
+              [placeholder]="selectedMedicineId ? '' : 'Type to search medicine…'"
+              [(ngModel)]="medicineSearchTerm"
+              (input)="onMedicineSearch()"
+              (focus)="onMedicineSearchFocus()"
+              autocomplete="off"
+            >
+            <!-- Selected chip shown inside input area -->
+            <span class="selected-medicine-chip" *ngIf="selectedMedicineId && selectedMedicine">
+              {{ selectedMedicine.name }}
+              <button type="button" class="chip-clear" (click)="clearMedicineSelection()">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </span>
+          </div>
+
+          <!-- Suggestions dropdown -->
+          <div class="medicine-suggestions" *ngIf="showMedicineSuggestions && filteredMedicines.length > 0">
+            <div
+              class="suggestion-item"
+              *ngFor="let m of filteredMedicines"
+              (mousedown)="selectMedicine(m)">
+              <span class="material-symbols-outlined">medication</span>
+              <span class="suggestion-name">{{ m.name }}</span>
+              <span class="suggestion-price">{{ formatCurrency(m.sale_price) }}</span>
+            </div>
+          </div>
+
+          <!-- No results -->
+          <div class="medicine-suggestions medicine-no-results"
+               *ngIf="showMedicineSuggestions && medicineSearchTerm.trim().length > 0 && filteredMedicines.length === 0">
+            <div class="no-suggestion-item">
+              <span class="material-symbols-outlined">search_off</span>
+              No medicines found for "<strong>{{ medicineSearchTerm }}</strong>"
+            </div>
+          </div>
         </div>
 
         <div class="form-group">

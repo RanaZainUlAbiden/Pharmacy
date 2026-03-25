@@ -106,27 +106,23 @@ export class StockComponent implements OnInit, OnDestroy {
 
   async loadCurrentStock() {
     try {
-      const result = await this.dbRun(`
-        SELECT 
-          m.product_id, 
-          m.name, 
-          m.sale_price, 
-          m.minimum_threshold,
-          p.packing_name,
-          COALESCE(SUM(bi.quantity_remaining), 0) as current_stock,
-          COUNT(DISTINCT bi.batch_item_id) as batch_count,
-          MIN(bi.expiry_date) as earliest_expiry
-        FROM medicines m
-        LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-        LEFT JOIN packing p ON m.packing_id = p.packing_id
-        GROUP BY m.product_id
-        ORDER BY 
-          CASE 
-            WHEN COALESCE(SUM(bi.quantity_remaining), 0) <= m.minimum_threshold THEN 0
-            ELSE 1
-          END,
-          m.name
-      `);
+     const result = await this.dbRun(`
+  SELECT 
+    m.product_id, 
+    m.name, 
+    m.sale_price, 
+    m.minimum_threshold,
+    p.packing_name,
+    SUM(bi.quantity_remaining) as current_stock,
+    COUNT(DISTINCT bi.batch_item_id) as batch_count,
+    MIN(bi.expiry_date) as earliest_expiry
+  FROM medicines m
+  INNER JOIN batch_items bi ON m.product_id = bi.product_id
+  LEFT JOIN packing p ON m.packing_id = p.packing_id
+  WHERE bi.quantity_remaining > 0
+  GROUP BY m.product_id
+  ORDER BY m.name
+`);
       this.currentStock = result || [];
     } catch (error) {
       console.error('Error loading current stock:', error);
