@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DatabaseService } from '../../services/database.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { TaxService } from '../../services/tax.service';
 
 @Component({
   selector: 'app-sales',
@@ -23,7 +24,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   cartDiscount = 0;
   cartTax = 0;
   cartTotal = 0;
-  taxRate = 0.17; // 17%
+  taxRate = 0; 
 
   // Product search
   searchQuery = '';
@@ -59,11 +60,19 @@ export class SalesComponent implements OnInit, OnDestroy {
     private db: DatabaseService,
     private router: Router,
     private zone: NgZone,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+     private taxService: TaxService 
   ) {}
 
   ngOnInit() {
     this.generateInvoiceNumber();
+
+     // ✅ Tax listen karo
+  this.taxService.taxRate$.subscribe(rate => {
+    this.taxRate = rate;
+    this.updateCartTotals(); // important 🔥
+  });
+
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();
@@ -298,7 +307,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   updateCartTotals() {
     this.cartSubtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
     this.cartDiscount = this.cartSubtotal * (this.discountPercent / 100);
-    this.cartTax = (this.cartSubtotal - this.cartDiscount) * this.taxRate;
+  this.cartTax = (this.cartSubtotal - this.cartDiscount) * (this.taxRate / 100);
     this.cartTotal = this.cartSubtotal - this.cartDiscount + this.cartTax;
     this.calculateChange();
   }
