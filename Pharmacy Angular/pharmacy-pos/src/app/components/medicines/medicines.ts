@@ -39,6 +39,21 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   isLoading = false;
   private isDestroyed = false;
 
+  // Pagination variables
+  currentPage = 1;
+  pageSize = 100;
+  totalMedicines = 0;
+  totalPages = 0;
+
+  // Performance: Debounce timer for search
+  private searchTimeout: any = null;
+
+
+  // Add these with your other variables
+selectedLetter: string = '';
+alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'ALL'];
+
   // Custom confirm dialog
   showConfirmDialog = false;
   confirmMessage = '';
@@ -57,6 +72,7 @@ export class MedicinesComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.isDestroyed = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
   }
 
   private openConfirm(message: string, onConfirm: () => void) {
@@ -102,6 +118,63 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     });
   }
 
+  filterByLetter(letter: string) {
+  this.selectedLetter = letter;
+  this.currentPage = 1;
+  
+  if (letter === 'ALL') {
+    this.searchTerm = '';
+    this.loadMedicines(true);
+  } else {
+    this.searchTerm = '';
+    this.searchByLetter(letter);
+  }
+}
+
+async searchByLetter(letter: string) {
+  if (this.isDestroyed) return;
+  
+  this.isLoading = true;
+  this.cdr.detectChanges();
+  
+  try {
+    const term = `${letter}%`;
+    const offset = (this.currentPage - 1) * this.pageSize;
+    
+    // Get total count for this letter
+    const countResult = await this.dbRun(`
+      SELECT COUNT(*) as total FROM medicines WHERE name LIKE ?
+    `, [term]);
+    this.totalMedicines = countResult[0]?.total || 0;
+    this.totalPages = Math.ceil(this.totalMedicines / this.pageSize);
+    
+    // Get paginated results for this letter
+    const result = await this.dbRun(`
+      SELECT 
+        m.product_id, m.name, m.description, m.sale_price, m.minimum_threshold,
+        p.packing_id, p.packing_name,
+        COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
+      FROM medicines m
+      LEFT JOIN packing p ON m.packing_id = p.packing_id
+      LEFT JOIN batch_items bi ON m.product_id = bi.product_id
+      WHERE m.name LIKE ?
+      GROUP BY m.product_id
+      ORDER BY m.name
+      LIMIT ? OFFSET ?
+    `, [term, this.pageSize, offset]);
+
+    if (!this.isDestroyed) {
+      this.medicines = result || [];
+      this.cdr.detectChanges();
+    }
+  } catch (error) {
+    console.error('Error searching by letter:', error);
+    this.showToast('Failed to load medicines', 'error');
+  } finally {
+    this.isLoading = false;
+    this.cdr.detectChanges();
+  }
+}
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;
     if (this.toastTimer) clearTimeout(this.toastTimer);
@@ -152,26 +225,139 @@ export class MedicinesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loadMedicines() {
+  async loadMedicines(resetPage: boolean = true) {
     if (this.isDestroyed) return;
+    
+    if (resetPage) {
+      this.currentPage = 1;
+    }
+    
+    this.isLoading = true;
+    this.cdr.detectChanges();
 
-    const result = await this.dbRun(`
-      SELECT 
-        m.product_id, m.name, m.description, m.sale_price, m.minimum_threshold,
-        p.packing_id, p.packing_name,
-        COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
-      FROM medicines m
-      LEFT JOIN packing p ON m.packing_id = p.packing_id
-      LEFT JOIN batch_items bi ON m.product_id = bi.product_id
-      GROUP BY m.product_id
-      ORDER BY m.name
-    `);
+    try {
+      // Get total count
+      const countResult = await this.dbRun(`SELECT COUNT(*) as total FROM medicines`);
+      this.totalMedicines = countResult[0]?.total || 0;
+      this.totalPages = Math.ceil(this.totalMedicines / this.pageSize);
+      
+      // Get paginated data
+      const offset = (this.currentPage - 1) * this.pageSize;
+      
+      const result = await this.dbRun(`
+        SELECT 
+          m.product_id, m.name, m.description, m.sale_price, m.minimum_threshold,
+          p.packing_id, p.packing_name,
+          COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
+        FROM medicines m
+        LEFT JOIN packing p ON m.packing_id = p.packing_id
+        LEFT JOIN batch_items bi ON m.product_id = bi.product_id
+        GROUP BY m.product_id
+        ORDER BY m.name
+        LIMIT ? OFFSET ?
+      `, [this.pageSize, offset]);
 
-    if (!this.isDestroyed) {
-      this.medicines = result || [];
+      if (!this.isDestroyed) {
+        this.medicines = result || [];
+        this.cdr.detectChanges();
+      }
+    } catch (error) {
+      console.error('Error loading medicines:', error);
+      this.showToast('Failed to load medicines', 'error');
+    } finally {
+      this.isLoading = false;
       this.cdr.detectChanges();
     }
   }
+
+  async searchMedicines() {
+    if (this.isDestroyed) return;
+    
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.loadMedicines(true);
+      return;
+    }
+    
+    this.isLoading = true;
+    this.cdr.detectChanges();
+    
+    try {
+      const term = `%${this.searchTerm.trim()}%`;
+      const offset = (this.currentPage - 1) * this.pageSize;
+      
+      // Get total count for search results
+      const countResult = await this.dbRun(`
+        SELECT COUNT(*) as total FROM medicines WHERE name LIKE ?
+      `, [term]);
+      this.totalMedicines = countResult[0]?.total || 0;
+      this.totalPages = Math.ceil(this.totalMedicines / this.pageSize);
+      
+      // Get paginated search results
+      const result = await this.dbRun(`
+        SELECT 
+          m.product_id, m.name, m.description, m.sale_price, m.minimum_threshold,
+          p.packing_id, p.packing_name,
+          COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
+        FROM medicines m
+        LEFT JOIN packing p ON m.packing_id = p.packing_id
+        LEFT JOIN batch_items bi ON m.product_id = bi.product_id
+        WHERE m.name LIKE ?
+        GROUP BY m.product_id
+        ORDER BY m.name
+        LIMIT ? OFFSET ?
+      `, [term, this.pageSize, offset]);
+
+      if (!this.isDestroyed) {
+        this.medicines = result || [];
+        this.cdr.detectChanges();
+      }
+    } catch (error) {
+      console.error('Error searching medicines:', error);
+      this.showToast('Failed to search medicines', 'error');
+    } finally {
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  // Pagination methods
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    
+    if (this.searchTerm && this.searchTerm.trim() !== '') {
+      this.searchMedicines();
+    } else {
+      this.loadMedicines(false);
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.goToPage(this.currentPage + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.goToPage(this.currentPage - 1);
+    }
+  }
+
+  // Search with debounce
+  onSearchChange() {
+  if (this.searchTimeout) clearTimeout(this.searchTimeout);
+  
+  // Clear letter filter when user starts typing
+  if (this.searchTerm && this.searchTerm.trim() !== '') {
+    this.selectedLetter = '';
+  }
+  
+  this.searchTimeout = setTimeout(() => {
+    this.currentPage = 1;
+    this.searchMedicines();
+  }, 300);
+}
 
   async loadMedicineBatches(medicineId: number) {
     if (this.isDestroyed) return;
@@ -188,14 +374,6 @@ export class MedicinesComponent implements OnInit, OnDestroy {
       this.medicineBatches = result || [];
       this.cdr.detectChanges();
     }
-  }
-
-  get filteredMedicines(): any[] {
-    if (!this.searchTerm.trim()) return this.medicines;
-    const term = this.searchTerm.toLowerCase();
-    return this.medicines.filter(m =>
-      m.name.toLowerCase().includes(term)
-    );
   }
 
   trackById(_: number, item: any) {
