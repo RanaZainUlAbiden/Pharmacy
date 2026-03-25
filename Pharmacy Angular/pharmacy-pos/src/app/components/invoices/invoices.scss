@@ -1,0 +1,88 @@
+$primary: #667eea;
+$secondary: #764ba2;
+$danger: #ef4444;
+$success: #10b981;
+$dark: #1f2937;
+$muted: #6b7280;
+$border: #e5e7eb;
+$bg: #f9fafb;
+$white: #ffffff;
+$shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+
+// Toast
+.toast-container {
+  position: fixed; top: 1.25rem; right: 1.25rem;
+  z-index: 9999; animation: slideIn .3s ease;
+}
+.toast {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .9rem 1.4rem; border-radius: 10px;
+  font-size: .9rem; font-weight: 500; min-width: 260px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  &.toast-success { background: #ecfdf5; color: #065f46; border-left: 4px solid $success; }
+  &.toast-error { background: #fef2f2; color: #991b1b; border-left: 4px solid $danger; }
+}
+@keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+// Page Header
+.page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+  .header-left h1 { display: flex; align-items: center; gap: .6rem; margin: 0; font-size: 1.75rem; color: $dark;
+    .material-symbols-outlined { font-size: 30px; color: $primary; } }
+  .header-right .search-box { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem; border: 1px solid $border; border-radius: 8px; background: $white;
+    span { color: $muted; } input { border: none; outline: none; width: 250px; } }
+}
+
+// Invoices Card
+.invoices-card { background: $white; border-radius: 12px; padding: 1.25rem; box-shadow: $shadow; }
+
+// Table
+.table-container { overflow-x: auto;
+  table { width: 100%; border-collapse: collapse;
+    th { text-align: left; padding: 1rem; font-size: .75rem; font-weight: 600; color: $muted; text-transform: uppercase; border-bottom: 2px solid $border; }
+    td { padding: 1rem; font-size: .9rem; color: $dark; border-bottom: 1px solid $border;
+      &.center { text-align: center; }
+      &.amount { font-weight: 500; text-align: right; }
+      &.due { color: $danger; font-weight: 600; }
+      &.invoice-no { font-weight: 600; }
+      .icon-btn { background: none; border: none; padding: .5rem; border-radius: 6px; cursor: pointer; color: $muted;
+        &:hover { background: $bg; color: $primary; } }
+    }
+  }
+}
+
+// Modal
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+.modal-content { background: $white; border-radius: 16px; width: 550px; max-width: 90%; max-height: 80vh; display: flex; flex-direction: column;
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; border-bottom: 1px solid $border; }
+  .modal-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; padding: 1.25rem; border-top: 1px solid $border; }
+}
+
+.invoice-info { background: $bg; padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;
+  .info-row { margin-bottom: .5rem; &:last-child { margin-bottom: 0; } &.due { color: $danger; } }
+}
+
+// Loading State
+.loading-state { display: flex; flex-direction: column; align-items: center; padding: 3rem; color: $muted;
+  .spinner { width: 36px; height: 36px; border: 3px solid $border; border-top-color: $primary; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+}
+
+// Empty State
+.empty-state { display: flex; flex-direction: column; align-items: center; padding: 3rem; color: $muted; text-align: center;
+  span { font-size: 64px; opacity: .3; margin-bottom: 1rem; }
+  .hint { font-size: .8rem; margin-top: .5rem; }
+}
+
+// Buttons
+.btn-primary { background: linear-gradient(135deg, $primary, $secondary); color: white; border: none; padding: .6rem 1.2rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; }
+.btn-secondary { background: white; border: 1px solid $border; padding: .6rem 1.2rem; border-radius: 8px; cursor: pointer; &:hover { background: $bg; } }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// Responsive
+@media (max-width: 768px) {
+  .page-header { flex-direction: column; .header-right .search-box input { width: 100%; } }
+  .table-container table { font-size: .8rem; th, td { padding: .5rem; } }
+}

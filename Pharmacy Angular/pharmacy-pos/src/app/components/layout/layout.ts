@@ -20,6 +20,8 @@ export class LayoutComponent implements OnInit {
   menuItems = [
     { icon: 'dashboard', label: 'Dashboard', route: '/dashboard', active: false },
     { icon: 'point_of_sale', label: 'Sales', route: '/sales', active: false },
+    { icon: 'receipt', label: 'Invoices', route: '/invoices', active: false },  // NEW
+  { icon: 'swap_horiz', label: 'Returns', route: '/returns', active: false },
     { icon: 'medication', label: 'Medicines', route: '/medicines', active: false },
     { icon: 'inventory', label: 'Stock', route: '/stock', active: false },
     { icon: 'people', label: 'companies', route: '/companies', active: false },

@@ -1,0 +1,123 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>
+      <span class="material-symbols-outlined">receipt</span>
+      Invoices
+    </h1>
+  </div>
+  <!-- Search Box - Make sure it's properly bound -->
+<div class="header-right">
+  <div class="search-box">
+    <span class="material-symbols-outlined">search</span>
+    <input 
+      type="text" 
+      placeholder="Search by Invoice # " 
+      [(ngModel)]="searchTerm" 
+      (input)="onSearchChange()">
+  </div>
+</div>
+</div>
+
+<!-- Loading -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading invoices...</p>
+</div>
+
+<!-- Invoices List -->
+<div class="invoices-card" *ngIf="!isLoading">
+  <div class="table-container" *ngIf="filteredInvoices.length > 0; else emptyTpl">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Due</th>
+          <th>Actions</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let inv of filteredInvoices">
+          <td class="invoice-no">{{ inv.invoice_number || inv.sale_id }}</td>
+          <td>{{ formatDate(inv.sale_date) }}</td>
+          <td>{{ inv.customer_name || 'Walk-in' }}</td>
+          <td class="center">{{ inv.item_count || 0 }}</td>
+          <td class="amount">{{ formatCurrency(inv.total_amount) }}</td>
+          <td class="amount">{{ formatCurrency(inv.paid_amount) }}</td>
+          <td class="amount due">{{ formatCurrency(inv.due_amount) }}</td>
+          <td class="actions">
+            <button class="icon-btn" (click)="viewInvoiceDetails(inv)" title="View Details">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Invoice Details Modal -->
+<div class="modal-overlay" *ngIf="showDetails" (click)="closeDetails()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Invoice Details</h3>
+      <button class="close-modal" (click)="closeDetails()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedInvoice">
+      <div class="invoice-info">
+        <div class="info-row"><strong>Invoice #:</strong> {{ selectedInvoice.invoice_number || selectedInvoice.sale_id }}</div>
+        <div class="info-row"><strong>Date:</strong> {{ formatDate(selectedInvoice.sale_date) }}</div>
+        <div class="info-row"><strong>Customer:</strong> {{ selectedInvoice.customer_name || 'Walk-in' }}</div>
+        <div class="info-row"><strong>Total:</strong> {{ formatCurrency(selectedInvoice.total_amount) }}</div>
+        <div class="info-row"><strong>Paid:</strong> {{ formatCurrency(selectedInvoice.paid_amount) }}</div>
+        <div class="info-row due"><strong>Due:</strong> {{ formatCurrency(selectedInvoice.due_amount) }}</div>
+      </div>
+      
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr><th>Medicine</th><th>Qty</th><th>Price</th><th>Total</th> </thead>
+          <tbody>
+            <tr *ngFor="let item of invoiceItems">
+              <td>{{ item.medicine_name }}</td>
+              <td class="center">{{ item.quantity }}</td>
+              <td class="amount">{{ formatCurrency(item.price) }}</td>
+              <td class="amount">{{ formatCurrency(item.price * item.quantity) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-primary" (click)="printInvoice()">
+        <span class="material-symbols-outlined">print</span> Print
+      </button>
+      <button class="btn-secondary" (click)="closeDetails()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Empty Template -->
+<ng-template #emptyTpl>
+  <div class="empty-state">
+    <span class="material-symbols-outlined">receipt</span>
+    <p>No invoices found</p>
+    <p class="hint">Make a sale first to see invoices here</p>
+  </div>
+</ng-template>

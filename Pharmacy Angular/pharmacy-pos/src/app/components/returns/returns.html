@@ -1,0 +1,107 @@
+<!-- Toast -->
+<div class="toast-container" *ngIf="toast">
+  <div class="toast" [class.toast-success]="toast.type==='success'" [class.toast-error]="toast.type==='error'">
+    <span class="material-symbols-outlined">{{ toast.type==='success' ? 'check_circle' : 'error' }}</span>
+    <span>{{ toast.message }}</span>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>
+      <span class="material-symbols-outlined">swap_horiz</span>
+      Returns Management
+    </h1>
+  </div>
+</div>
+
+<!-- Search Section -->
+<div class="search-card">
+  <div class="search-section">
+    <div class="search-box">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" placeholder="Enter Invoice Number..." [(ngModel)]="invoiceNumber" (keyup.enter)="searchInvoice()">
+      <button class="btn-primary" (click)="searchInvoice()" [disabled]="isLoading">
+        <span class="material-symbols-outlined">receipt</span>
+        Load Invoice
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading invoice details...</p>
+</div>
+
+<!-- Invoice Details -->
+<div class="invoice-card" *ngIf="showInvoice && invoiceData">
+  <div class="invoice-header">
+    <h2>Invoice Details</h2>
+    <div class="invoice-info">
+      <div><strong>Invoice #:</strong> {{ invoiceData.invoice_number }}</div>
+      <div><strong>Date:</strong> {{ formatDate(invoiceData.sale_date) }}</div>
+      <div><strong>Customer:</strong> {{ invoiceData.customer_name || 'Walk-in' }}</div>
+      <div><strong>Total:</strong> {{ formatCurrency(invoiceData.total_amount) }}</div>
+      <div><strong>Paid:</strong> {{ formatCurrency(invoiceData.paid_amount) }}</div>
+      <div><strong>Due:</strong> <span class="due">{{ formatCurrency(invoiceData.total_amount - invoiceData.paid_amount) }}</span></div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Quantity Sold</th>
+          <th>Price</th>
+          <th>Total</th>
+          <th>Return Quantity</th>
+        </thead>
+      <tbody>
+        <tr *ngFor="let item of returnItems">
+          <td class="medicine-name">{{ item.medicine_name }}</td>
+          <td class="center">{{ item.quantity }}</td>
+          <td class="amount">{{ formatCurrency(item.price) }}</td>
+          <td class="amount">{{ formatCurrency(item.price * item.quantity) }}</td>
+          <td class="return-qty">
+            <input type="number" 
+                   class="qty-input" 
+                   [(ngModel)]="item.return_qty" 
+                   (ngModelChange)="updateReturnQuantity(item, $event)"
+                   min="0" 
+                   [max]="item.max_return"
+                   step="1">
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3" class="td-foot-label">Total Return Amount</td>
+          <td class="amount total-return">{{ formatCurrency(getTotalReturnAmount()) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn-secondary" (click)="clearAllQuantities()">
+      <span class="material-symbols-outlined">clear_all</span>
+      Clear All
+    </button>
+    <button class="btn-primary" (click)="processReturn()" [disabled]="isProcessing">
+      <span class="material-symbols-outlined">check_circle</span>
+      Process Return
+    </button>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div class="empty-state" *ngIf="!isLoading && !showInvoice">
+  <span class="material-symbols-outlined">swap_horiz</span>
+  <p>Enter invoice number to process return</p>
+  <p class="hint">Enter the invoice number and click "Load Invoice"</p>
+</div>

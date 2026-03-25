@@ -72,7 +72,7 @@ class DatabaseManager {
                     address TEXT
                 );
 
-                -- Medicines table (updated - removed company_id and category_id)
+                -- Medicines table
                 CREATE TABLE IF NOT EXISTS medicines (
                     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
@@ -110,13 +110,14 @@ class DatabaseManager {
                     FOREIGN KEY (product_id) REFERENCES medicines(product_id)
                 );
 
-                -- Sales table
+                -- Sales table with invoice_number
                 CREATE TABLE IF NOT EXISTS sales (
                     sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     customer_id INTEGER NOT NULL,
                     sale_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     total_amount DECIMAL(10,2) NOT NULL,
                     paid_amount DECIMAL(10,2) DEFAULT 0,
+                    invoice_number TEXT,
                     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
                 );
 
@@ -323,7 +324,7 @@ class DatabaseManager {
         return this.query(sql);
     }
 
-    // Process a sale with items
+    // Process a sale with items (UPDATED with invoice_number)
     async createSale(saleData, items) {
         const db = this.db;
         
@@ -332,16 +333,16 @@ class DatabaseManager {
                 db.run('BEGIN TRANSACTION');
                 
                 try {
-                    // Insert sale
+                    // Insert sale with invoice_number
                     const insertSale = `
-                        INSERT INTO sales (customer_id, total_amount, paid_amount)
-                        VALUES (?, ?, ?)
+                        INSERT INTO sales (customer_id, total_amount, paid_amount, invoice_number, sale_date)
+                        VALUES (?, ?, ?, ?, datetime('now'))
                     `;
                     
                     let saleId = null;
                     
                     db.run(insertSale, 
-                        [saleData.customer_id, saleData.total_amount, saleData.paid_amount],
+                        [saleData.customer_id, saleData.total_amount, saleData.paid_amount, saleData.invoice_number],
                         function(err) {
                             if (err) {
                                 db.run('ROLLBACK');

@@ -13,6 +13,8 @@ import { StockComponent } from './components/stock/stock';
 import { ReportsComponent } from './components/reports/reports';
 import { SettingsComponent } from './components/settings/settings';
 import { ReorderComponent } from './components/reorder/reorder';
+import { InvoicesComponent } from './components/invoices/invoices';      // NEW
+import { ReturnsComponent } from './components/returns/returns';          // NEW
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -29,6 +31,8 @@ export const routes: Routes = [
         }
       },{ path: 'reorder', component: ReorderComponent }
 ,
+ { path: 'invoices', component: InvoicesComponent },      // NEW
+      { path: 'returns', component: ReturnsComponent }    ,
       { path: 'stock', component: StockComponent }
 ,
       { path: 'sales', component: SalesComponent }
