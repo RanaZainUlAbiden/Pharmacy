@@ -21,17 +21,17 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   // Cart
   companySettings: any = {
-  name: 'Pharmacy POS',
-  address: '123 Main Street, Lahore',
-  phone: '0300-1234567',
-  email: 'info@pharmacy.com'
-};
+    name: 'Pharmacy POS',
+    address: '123 Main Street, Lahore',
+    phone: '0300-1234567',
+    email: 'info@pharmacy.com'
+  };
   cart: any[] = [];
   cartSubtotal = 0;
   cartDiscount = 0;
   cartTax = 0;
   cartTotal = 0;
-  taxRate = 0; 
+  taxRate = 0;
 
   // Product search
   searchQuery = '';
@@ -46,10 +46,10 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   // Customer
   customerName = '';
-  
+
   // Payment
   discountPercent = 0;
-  paidAmount!:number;
+  paidAmount!: number;
   change = 0;
 
   // UI states
@@ -68,19 +68,53 @@ export class SalesComponent implements OnInit, OnDestroy {
     private router: Router,
     private zone: NgZone,
     private cdr: ChangeDetectorRef,
-    private taxService: TaxService ,
-     public salesState: SalesStateService
+    private taxService: TaxService,
+    public salesState: SalesStateService
   ) {}
 
   loadCompanySettings() {
-  const saved = localStorage.getItem('companySettings');
-  if (saved) {
-    this.companySettings = JSON.parse(saved);
+    const saved = localStorage.getItem('companySettings');
+    if (saved) {
+      this.companySettings = JSON.parse(saved);
+    }
   }
-}
+
+  // ─── State Persistence ───────────────────────────────────────────────────────
+
+  /** Save current form state into the singleton service */
+  saveState() {
+    this.salesState.cart = this.cart.map(item => ({ ...item }));
+    this.salesState.customerName = this.customerName;
+    this.salesState.discountPercent = this.discountPercent;
+    this.salesState.paidAmount = this.paidAmount;
+  }
+
+  /** Restore form state from the singleton service (called on init) */
+  private restoreState() {
+    if (this.salesState.cart && this.salesState.cart.length > 0) {
+      this.cart = this.salesState.cart.map(item => ({ ...item }));
+      this.customerName = this.salesState.customerName || '';
+      this.discountPercent = this.salesState.discountPercent || 0;
+      this.paidAmount = this.salesState.paidAmount || 0;
+    }
+  }
+
+  /** Clear persisted state (called after a completed sale) */
+  private clearState() {
+    this.salesState.cart = [];
+    this.salesState.customerName = '';
+    this.salesState.discountPercent = 0;
+    this.salesState.paidAmount = 0;
+  }
+
+  // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
   ngOnInit() {
-     this.loadCompanySettings();
+    this.loadCompanySettings();
+
+    // Restore any previously entered data before doing anything else
+    this.restoreState();
+
     this.generateInvoiceNumber();
 
     // Listen for tax rate changes
@@ -100,6 +134,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.isDestroyed = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
   }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
     if (this.isDestroyed) return;
@@ -145,6 +181,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.invoiceNumber = `INV-${year}${month}${day}-${random}`;
   }
 
+  // ─── Search ──────────────────────────────────────────────────────────────────
+
   async searchProducts() {
     if (!this.searchQuery.trim() || this.searchQuery.length < 1) {
       this.searchResults = [];
@@ -155,7 +193,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.isSearching = true;
     try {
       const results = await this.dbRun(`
-        SELECT m.product_id, m.name, m.sale_price, 
+        SELECT m.product_id, m.name, m.sale_price,
                COALESCE(SUM(bi.quantity_remaining), 0) as current_stock
         FROM medicines m
         LEFT JOIN batch_items bi ON m.product_id = bi.product_id AND bi.quantity_remaining > 0
@@ -165,7 +203,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         ORDER BY m.name
         LIMIT 10
       `, [`%${this.searchQuery}%`]);
-      
+
       this.searchResults = results || [];
       this.selectedIndex = this.searchResults.length > 0 ? 0 : -1;
     } catch (error) {
@@ -175,10 +213,10 @@ export class SalesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Keyboard navigation
+  // ─── Keyboard Navigation ─────────────────────────────────────────────────────
+
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    // If quantity input is visible, only handle Enter to add to cart
     if (this.showQuantityInput) {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -187,7 +225,6 @@ export class SalesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Handle arrow keys and Right Shift for search
     if (document.activeElement !== this.searchInput?.nativeElement) return;
 
     if (event.key === 'ArrowDown') {
@@ -204,7 +241,6 @@ export class SalesComponent implements OnInit, OnDestroy {
       }
     } else if (event.key === 'ArrowRight') {
       event.preventDefault();
-      // Right Shift (ArrowRight) selects the highlighted product
       if (this.selectedIndex >= 0 && this.searchResults[this.selectedIndex]) {
         this.selectProduct(this.searchResults[this.selectedIndex]);
       } else if (this.searchResults.length > 0) {
@@ -222,6 +258,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  // ─── Cart Actions ─────────────────────────────────────────────────────────────
+
   selectProduct(product: any) {
     if (product.current_stock <= 0) {
       this.showToast('Out of stock!', 'error');
@@ -231,15 +269,13 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.selectedProduct = product;
     this.productQuantity = 1;
     this.showQuantityInput = true;
-    
-    // Clear search results and query
+
     this.searchQuery = '';
     this.searchResults = [];
     this.selectedIndex = -1;
-    
+
     this.cdr.detectChanges();
-    
-    // Focus on quantity input
+
     setTimeout(() => {
       if (this.quantityInput) {
         this.quantityInput.nativeElement.focus();
@@ -250,7 +286,7 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   addToCart() {
     if (!this.selectedProduct) return;
-    
+
     if (this.productQuantity < 1) {
       this.showToast('Quantity must be at least 1', 'error');
       setTimeout(() => {
@@ -261,7 +297,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       }, 50);
       return;
     }
-    
+
     if (this.productQuantity > this.selectedProduct.current_stock) {
       this.showToast(`Only ${this.selectedProduct.current_stock} available`, 'error');
       setTimeout(() => {
@@ -273,9 +309,8 @@ export class SalesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Check if already in cart
     const existing = this.cart.find(item => item.product_id === this.selectedProduct.product_id);
-    
+
     if (existing) {
       if (existing.quantity + this.productQuantity > this.selectedProduct.current_stock) {
         this.showToast(`Only ${this.selectedProduct.current_stock} available total`, 'error');
@@ -300,16 +335,16 @@ export class SalesComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.updateCartTotals();
+    this.updateCartTotals(); // saveState() is called inside here
+
     this.showToast(`${this.selectedProduct.name} added to cart`, 'success');
-    
-    // Reset product selection and go back to search
+
     this.selectedProduct = null;
     this.showQuantityInput = false;
     this.productQuantity = 1;
-    
+
     this.cdr.detectChanges();
-    
+
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();
@@ -323,6 +358,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.cartTax = (this.cartSubtotal - this.cartDiscount) * (this.taxRate / 100);
     this.cartTotal = this.cartSubtotal - this.cartDiscount + this.cartTax;
     this.calculateChange();
+    this.saveState(); // ✅ persist on every cart/totals change
   }
 
   updateQuantity(item: any, change: number) {
@@ -351,7 +387,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   clearCart() {
     if (this.cart.length > 0) {
       this.cart = [];
-      this.updateCartTotals();
+      this.updateCartTotals(); // saveState() called inside
       this.showToast('Cart cleared', 'success');
     }
   }
@@ -359,11 +395,22 @@ export class SalesComponent implements OnInit, OnDestroy {
   onDiscountChange() {
     if (this.discountPercent < 0) this.discountPercent = 0;
     if (this.discountPercent > 100) this.discountPercent = 100;
-    this.updateCartTotals();
+    this.updateCartTotals(); // saveState() called inside
+  }
+
+  /** Called by (ngModelChange) on the paid amount input */
+  onPaidAmountChange() {
+    this.calculateChange();
+    this.saveState(); // ✅ persist when paid amount changes
   }
 
   calculateChange() {
-    this.change = Math.max(0, this.paidAmount - this.cartTotal);
+    this.change = Math.max(0, (this.paidAmount || 0) - this.cartTotal);
+  }
+
+  /** Called by (ngModelChange) on the customer name input */
+  onCustomerNameChange() {
+    this.saveState(); // ✅ persist when customer name changes
   }
 
   onSearchEnter() {
@@ -377,6 +424,8 @@ export class SalesComponent implements OnInit, OnDestroy {
   onQuantityEnter() {
     this.addToCart();
   }
+
+  // ─── Save / Print ─────────────────────────────────────────────────────────────
 
   async saveSaleOnly(showPrint = false) {
     if (this.cart.length === 0) {
@@ -440,7 +489,6 @@ export class SalesComponent implements OnInit, OnDestroy {
         }
       }
 
-      // ✅ IMPORTANT: Add invoice_number to saleData
       const saleData = {
         customer_id: customerId,
         total_amount: this.cartTotal,
@@ -491,174 +539,172 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.saveSaleOnly(true);
   }
 
-printReceipt() {
-  if (!this.currentSale) return;
+  printReceipt() {
+    if (!this.currentSale) return;
 
-  const doc = new jsPDF({
-    unit: 'mm',
-    format: [80, 200],
-    orientation: 'portrait'
-  });
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: [80, 200],
+      orientation: 'portrait'
+    });
 
-  const pageWidth = 80;
-  const margin = 5;
-  let yPos = 8;
+    const pageWidth = 80;
+    const margin = 5;
+    let yPos = 8;
 
-  const company = this.companySettings;
+    const company = this.companySettings;
 
-  // ============ HEADER ============
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text(company.name || 'PHARMACY POS', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 6;
+    // ============ HEADER ============
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(company.name || 'PHARMACY POS', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
 
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  if (company.address) { doc.text(company.address, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
-  if (company.phone) { doc.text(`Phone: ${company.phone}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
-  if (company.email) { doc.text(`Email: ${company.email}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    if (company.address) { doc.text(company.address, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+    if (company.phone) { doc.text(`Phone: ${company.phone}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
+    if (company.email) { doc.text(`Email: ${company.email}`, pageWidth / 2, yPos, { align: 'center' }); yPos += 4; }
 
-  yPos += 2;
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 4;
+    yPos += 2;
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 4;
 
-  // ============ INVOICE INFO ============
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('SALE RECEIPT', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 6;
+    // ============ INVOICE INFO ============
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('SALE RECEIPT', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(`Inv: ${this.currentSale.invoice_number}`, margin, yPos);
-  yPos += 4;
-  doc.text(`Date: ${new Date(this.currentSale.date).toLocaleString()}`, margin, yPos);
-  yPos += 4;
-  doc.text(`Customer: ${this.currentSale.customer || 'Walk-in'}`, margin, yPos);
-  yPos += 4;
-
-  const user = localStorage.getItem('currentUser');
-  const cashier = user ? JSON.parse(user).username : 'Admin';
-  doc.text(`Cashier: ${cashier}`, margin, yPos);
-  yPos += 6;
-
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 4;
-
-  // ============ ITEMS TABLE ============
-  const colItem = margin;
-  const colQty = pageWidth - 40;
-  const colPrice = pageWidth - 25;
-  const colTotal = pageWidth - 12;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text('Item', colItem, yPos);
-  doc.text('Qty', colQty, yPos);
-  doc.text('Price', colPrice, yPos);
-  doc.text('Total', colTotal, yPos);
-  yPos += 4;
-
-  doc.setFont('helvetica', 'normal');
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 4;
-
-  for (const item of this.currentSale.items || []) {
-    let name = item.name;
-    if (name.length > 18) name = name.substring(0, 16) + '..';
-    doc.text(name, colItem, yPos);
-    doc.text(item.quantity.toString(), colQty, yPos);
-    doc.text(this.formatCurrency(item.price), colPrice, yPos);
-    doc.text(this.formatCurrency(item.total), colTotal, yPos);
-    yPos += 5;
-
-    // Page overflow check
-    if (yPos > 190) { doc.addPage(); yPos = 8; }
-  }
-
-  yPos += 2;
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 4;
-
-  // ============ TOTALS ============
-  const rightX = pageWidth - margin;
-  const leftX = rightX - 35;
-
-  const totals = [
-    { label: 'Subtotal:', value: this.currentSale.subtotal },
-    { label: `Discount (${this.currentSale.discount_percent || 0}%):`, value: this.currentSale.discount },
-    { label: `Tax (${this.taxRate}%):`, value: this.currentSale.tax },
-    { label: 'TOTAL:', value: this.currentSale.total, bold: true },
-    { label: 'Paid:', value: this.currentSale.paid },
-    { label: 'Change:', value: this.currentSale.change }
-  ];
-
-  for (const t of totals) {
-    doc.setFont('helvetica', t.bold ? 'bold' : 'normal');
-    doc.setFontSize(t.bold ? 10 : 8);
-    if (t.value !== undefined && t.value !== null) {
-      doc.text(t.label, leftX, yPos);
-      doc.text(this.formatCurrency(t.value), rightX, yPos, { align: 'right' });
-      yPos += t.bold ? 6 : 5;
-    }
-  }
-
-  // Payment Method
-  if (this.currentSale.payment_method) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Payment: ${this.currentSale.payment_method}`, leftX, yPos);
+    doc.text(`Inv: ${this.currentSale.invoice_number}`, margin, yPos);
+    yPos += 4;
+    doc.text(`Date: ${new Date(this.currentSale.date).toLocaleString()}`, margin, yPos);
+    yPos += 4;
+    doc.text(`Customer: ${this.currentSale.customer || 'Walk-in'}`, margin, yPos);
+    yPos += 4;
+
+    const user = localStorage.getItem('currentUser');
+    const cashier = user ? JSON.parse(user).username : 'Admin';
+    doc.text(`Cashier: ${cashier}`, margin, yPos);
     yPos += 6;
+
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 4;
+
+    // ============ ITEMS TABLE ============
+    const colItem = margin;
+    const colQty = pageWidth - 40;
+    const colPrice = pageWidth - 25;
+    const colTotal = pageWidth - 12;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('Item', colItem, yPos);
+    doc.text('Qty', colQty, yPos);
+    doc.text('Price', colPrice, yPos);
+    doc.text('Total', colTotal, yPos);
+    yPos += 4;
+
+    doc.setFont('helvetica', 'normal');
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 4;
+
+    for (const item of this.currentSale.items || []) {
+      let name = item.name;
+      if (name.length > 18) name = name.substring(0, 16) + '..';
+      doc.text(name, colItem, yPos);
+      doc.text(item.quantity.toString(), colQty, yPos);
+      doc.text(this.formatCurrency(item.price), colPrice, yPos);
+      doc.text(this.formatCurrency(item.total), colTotal, yPos);
+      yPos += 5;
+
+      if (yPos > 190) { doc.addPage(); yPos = 8; }
+    }
+
+    yPos += 2;
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 4;
+
+    // ============ TOTALS ============
+    const rightX = pageWidth - margin;
+    const leftX = rightX - 35;
+
+    const totals = [
+      { label: 'Subtotal:', value: this.currentSale.subtotal },
+      { label: `Discount (${this.currentSale.discount_percent || 0}%):`, value: this.currentSale.discount },
+      { label: `Tax (${this.taxRate}%):`, value: this.currentSale.tax },
+      { label: 'TOTAL:', value: this.currentSale.total, bold: true },
+      { label: 'Paid:', value: this.currentSale.paid },
+      { label: 'Change:', value: this.currentSale.change }
+    ];
+
+    for (const t of totals) {
+      doc.setFont('helvetica', t.bold ? 'bold' : 'normal');
+      doc.setFontSize(t.bold ? 10 : 8);
+      if (t.value !== undefined && t.value !== null) {
+        doc.text(t.label, leftX, yPos);
+        doc.text(this.formatCurrency(t.value), rightX, yPos, { align: 'right' });
+        yPos += t.bold ? 6 : 5;
+      }
+    }
+
+    if (this.currentSale.payment_method) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(`Payment: ${this.currentSale.payment_method}`, leftX, yPos);
+      yPos += 6;
+    }
+
+    // ============ FOOTER ============
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('Visit Again', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 3;
+
+    if (company.gst) {
+      doc.text(`GST: ${company.gst}`, pageWidth / 2, yPos, { align: 'center' });
+    }
+
+    // ============ PRINT ============
+    const pdfData = doc.output('dataurlstring');
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Receipt - ${this.currentSale.invoice_number}</title>
+            <style>
+              body { margin: 0; padding: 0; font-family: monospace; display:flex; justify-content:center; background:#f0f0f0; }
+              iframe { width:400px; height:600px; border:none; }
+              @media print { body { background:white; } iframe { width:100%; height:100%; } }
+            </style>
+          </head>
+          <body>
+            <iframe src="${pdfData}"></iframe>
+            <script>setTimeout(()=>{ document.querySelector('iframe').contentWindow.focus(); document.querySelector('iframe').contentWindow.print(); },500);</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+    } else {
+      doc.save(`receipt_${this.currentSale.invoice_number}.pdf`);
+      this.showToast('Receipt saved as PDF');
+    }
+
+    this.showToast('Receipt preview opened');
   }
-
-  // ============ FOOTER ============
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 6;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text('Visit Again', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 3;
-
-  if (company.gst) {
-    doc.text(`GST: ${company.gst}`, pageWidth / 2, yPos, { align: 'center' });
-  }
-
-  // ============ PRINT ============
-  const pdfData = doc.output('dataurlstring');
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Receipt - ${this.currentSale.invoice_number}</title>
-          <style>
-            body { margin: 0; padding: 0; font-family: monospace; display:flex; justify-content:center; background:#f0f0f0; }
-            iframe { width:400px; height:600px; border:none; }
-            @media print { body { background:white; } iframe { width:100%; height:100%; } }
-          </style>
-        </head>
-        <body>
-          <iframe src="${pdfData}"></iframe>
-          <script>setTimeout(()=>{ document.querySelector('iframe').contentWindow.focus(); document.querySelector('iframe').contentWindow.print(); },500);</script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-  } else {
-    doc.save(`receipt_${this.currentSale.invoice_number}.pdf`);
-    this.showToast('Receipt saved as PDF');
-  }
-
-  this.showToast('Receipt preview opened');
-}
 
   newSale() {
     this.cart = [];
@@ -670,7 +716,10 @@ printReceipt() {
     this.showSuccessDialog = false;
     this.currentSale = null;
     this.generateInvoiceNumber();
-    
+
+    // ✅ Clear persisted state so navigating back doesn't restore a completed sale
+    this.clearState();
+
     setTimeout(() => {
       if (this.searchInput) {
         this.searchInput.nativeElement.focus();

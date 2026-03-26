@@ -17,23 +17,23 @@
         Search Medicine
         <small>Use ↑/↓ arrows, Enter to select product</small>
       </h2>
-      
+
       <div class="search-box">
         <span class="material-symbols-outlined">search</span>
-        <input 
+        <input
           #searchInput
-          type="text" 
-          placeholder="Type medicine name..." 
+          type="text"
+          placeholder="Type medicine name..."
           [(ngModel)]="searchQuery"
           (input)="searchProducts()"
           (keydown.enter)="onSearchEnter()"
           autofocus>
       </div>
-      
+
       <!-- Search Results with Keyboard Navigation -->
       <div class="search-results" *ngIf="searchResults.length > 0">
-        <div *ngFor="let item of searchResults; let i = index" 
-             class="search-item" 
+        <div *ngFor="let item of searchResults; let i = index"
+             class="search-item"
              [class.selected]="i === selectedIndex"
              (click)="selectProduct(item)">
           <div class="item-info">
@@ -43,16 +43,16 @@
           <div class="item-stock">Stock: {{ item.current_stock }}</div>
         </div>
       </div>
-      
+
       <!-- Quantity Input (appears after product selection via Enter or click) -->
       <div class="quantity-section" *ngIf="showQuantityInput && selectedProduct">
         <div class="quantity-box">
           <label>Quantity for {{ selectedProduct.name }}:</label>
-          <input 
+          <input
             #quantityInput
-            type="number" 
-            class="quantity-input" 
-            [(ngModel)]="productQuantity" 
+            type="number"
+            class="quantity-input"
+            [(ngModel)]="productQuantity"
             min="1"
             [max]="selectedProduct.current_stock"
             (keyup.enter)="onQuantityEnter()">
@@ -73,7 +73,7 @@
           Clear All
         </button>
       </div>
-      
+
       <div class="cart-items" *ngIf="cart.length > 0; else emptyCart">
         <div *ngFor="let item of cart" class="cart-item">
           <div class="item-details">
@@ -91,7 +91,7 @@
           </div>
         </div>
       </div>
-      
+
       <ng-template #emptyCart>
         <div class="empty-cart">
           <span class="material-symbols-outlined">shopping_cart</span>
@@ -110,11 +110,16 @@
         <span class="material-symbols-outlined">person</span>
         Customer
       </h3>
-      <input 
-        type="text" 
-        class="customer-input" 
-        placeholder="Customer name (optional)" 
-        [(ngModel)]="customerName">
+      <!--
+        ✅ (ngModelChange) calls onCustomerNameChange() so the name is
+        persisted to SalesStateService on every keystroke.
+      -->
+      <input
+        type="text"
+        class="customer-input"
+        placeholder="Customer name (optional)"
+        [(ngModel)]="customerName"
+        (ngModelChange)="onCustomerNameChange()">
       <div class="customer-hint">Leave blank for Walk-in Customer</div>
     </div>
 
@@ -124,28 +129,28 @@
         <span>Subtotal</span>
         <span class="amount">{{ formatCurrency(cartSubtotal) }}</span>
       </div>
-      
+
       <div class="total-row">
         <span>Discount</span>
         <div class="discount-input">
-          <input 
-            type="number" 
-            class="discount-field" 
-            [(ngModel)]="discountPercent" 
+          <input
+            type="number"
+            class="discount-field"
+            [(ngModel)]="discountPercent"
             (ngModelChange)="onDiscountChange()"
-            min="0" 
+            min="0"
             max="100"
             step="1">
           <span>%</span>
           <span class="discount-amount">(-{{ formatCurrency(cartDiscount) }})</span>
         </div>
       </div>
-      
+
       <div class="total-row">
         <span>Tax ({{ taxRate }}%)</span>
         <span class="amount">{{ formatCurrency(cartTax) }}</span>
       </div>
-      
+
       <div class="total-row total">
         <span>Total</span>
         <span class="amount">{{ formatCurrency(cartTotal) }}</span>
@@ -156,11 +161,15 @@
     <div class="payment-section">
       <div class="payment-row">
         <label>Paid Amount:</label>
-        <input 
-          type="number" 
-          class="paid-input" 
-          [(ngModel)]="paidAmount" 
-          (ngModelChange)="calculateChange()"
+        <!--
+          ✅ (ngModelChange) now calls onPaidAmountChange() instead of
+          calculateChange() directly, so the paid amount is also persisted.
+        -->
+        <input
+          type="number"
+          class="paid-input"
+          [(ngModel)]="paidAmount"
+          (ngModelChange)="onPaidAmountChange()"
           placeholder="0"
           step="1">
       </div>
