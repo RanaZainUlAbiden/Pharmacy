@@ -665,6 +665,15 @@ export class SalesComponent implements OnInit, OnDestroy {
     doc.setFontSize(9);
     doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
     yPos += 5;
+   
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Made by DevInfantary.com', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('0332-4645962', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);

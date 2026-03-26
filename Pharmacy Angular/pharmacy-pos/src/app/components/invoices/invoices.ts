@@ -397,6 +397,11 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   doc.text('THANK YOU!', pageWidth / 2, yPos, { align: 'center' });
   yPos += 5;
 
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Made by DevInfantary.com', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.text('Visit Again', pageWidth / 2, yPos, { align: 'center' });

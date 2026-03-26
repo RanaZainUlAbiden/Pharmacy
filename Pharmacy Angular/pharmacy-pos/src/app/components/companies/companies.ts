@@ -33,7 +33,7 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   // Validation errors
   nameError    = '';
   contactError = '';
-  addressError = '';
+  addressError = '';   // kept for template compatibility, never set
 
   // Toast
   toast: { message: string; type: 'success' | 'error' } | null = null;
@@ -64,8 +64,8 @@ export class CompaniesComponent implements OnInit, OnDestroy {
 
   private openConfirm(message: string, onConfirm: () => void) {
     this.zone.run(() => {
-      this.confirmMessage  = message;
-      this.confirmCallback = onConfirm;
+      this.confirmMessage    = message;
+      this.confirmCallback   = onConfirm;
       this.showConfirmDialog = true;
       this.cdr.detectChanges();
     });
@@ -102,7 +102,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.detectChanges();
     try {
-      // Remove medicine count since company_id is removed from medicines
       const result = await this.dbRun(`SELECT * FROM company ORDER BY company_name`);
       if (!this.isDestroyed) this.companies = Array.isArray(result) ? [...result] : [];
     } catch (e) {
@@ -115,7 +114,6 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   async loadCompanyMedicines(id: number) {
     if (this.isDestroyed) return;
     try {
-      // Since medicines no longer have company_id, show empty list
       this.companyMedicines = [];
     } catch (e) { console.error(e); }
   }
@@ -141,45 +139,43 @@ export class CompaniesComponent implements OnInit, OnDestroy {
 
   trackById(_: number, item: any) { return item.company_id; }
 
-  private readonly phoneRegex = /^(\+92|0)3[0-9]{2}[-]?[0-9]{7}$/;
-
   private clearErrors() {
     this.nameError = this.contactError = this.addressError = '';
   }
 
+  // ── Validation ────────────────────────────────────────────────────────────────
+
   validateName() {
     const v = this.formName.trim();
-    if (!v)          this.nameError = 'Company name is required.';
-    else if (v.length < 2) this.nameError = 'Name must be at least 2 characters.';
+    if (!v)               this.nameError = 'Company name is required.';
+    else if (v.length < 2)  this.nameError = 'Name must be at least 2 characters.';
     else if (v.length > 100) this.nameError = 'Name cannot exceed 100 characters.';
-    else             this.nameError = '';
+    else                  this.nameError = '';
   }
 
+  // ✅ Contact: required, but NO format validation — accepts any number (PTCL, mobile, 052, etc.)
   validateContact() {
     const v = this.formContact.trim();
-    if (!v)                       this.contactError = 'Contact number is required.';
-    else if (!this.phoneRegex.test(v)) this.contactError = 'Format: 03XX-XXXXXXX or 03XXXXXXXXX';
-    else                          this.contactError = '';
+    if (!v) this.contactError = 'Contact number is required.';
+    else    this.contactError = '';
   }
 
+  // ✅ Address: optional — no validation at all
   validateAddress() {
-    const v = this.formAddress.trim();
-    if (!v)            this.addressError = 'Address is required.';
-    else if (v.length < 5)  this.addressError = 'Address must be at least 5 characters.';
-    else if (v.length > 255) this.addressError = 'Address cannot exceed 255 characters.';
-    else               this.addressError = '';
+    this.addressError = '';
   }
 
   private validateAll(): boolean {
     this.validateName();
     this.validateContact();
     this.validateAddress();
-    return !this.nameError && !this.contactError && !this.addressError;
+    return !this.nameError && !this.contactError;  // ✅ address not required
   }
 
+  // ✅ formInvalid: address no longer blocks submission
   get formInvalid(): boolean {
-    return !!this.nameError || !!this.contactError || !!this.addressError
-      || !this.formName.trim() || !this.formContact.trim() || !this.formAddress.trim();
+    return !!this.nameError || !!this.contactError
+      || !this.formName.trim() || !this.formContact.trim();
   }
 
   private openForm(mode: 'add' | 'edit') {
@@ -237,14 +233,19 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   async addCompany() {
     if (!this.validateAll() || this.isBusy || this.isDestroyed) return;
 
-    const name = this.formName.trim(), contact = this.formContact.trim(), address = this.formAddress.trim();
+    const name    = this.formName.trim();
+    const contact = this.formContact.trim();
+    const address = this.formAddress.trim();   // may be empty — that's fine
+
     this.isBusy = true;
     this.showForm = false; this.formMode = null;
     this.cdr.detectChanges();
 
     try {
-      await this.dbRun(`INSERT INTO company (company_name, contact, address) VALUES (?, ?, ?)`,
-        [name, contact, address], 'run');
+      await this.dbRun(
+        `INSERT INTO company (company_name, contact, address) VALUES (?, ?, ?)`,
+        [name, contact, address], 'run'
+      );
       if (!this.isDestroyed) { await this.loadCompanies(); this.showToast('Company added successfully!'); }
     } catch (e: any) {
       if (!this.isDestroyed) {
@@ -259,15 +260,20 @@ export class CompaniesComponent implements OnInit, OnDestroy {
   async updateCompany() {
     if (!this.validateAll() || !this.formId || this.isBusy || this.isDestroyed) return;
 
-    const id = this.formId;
-    const name = this.formName.trim(), contact = this.formContact.trim(), address = this.formAddress.trim();
+    const id      = this.formId;
+    const name    = this.formName.trim();
+    const contact = this.formContact.trim();
+    const address = this.formAddress.trim();   // may be empty — that's fine
+
     this.isBusy = true;
     this.showForm = false; this.formMode = null;
     this.cdr.detectChanges();
 
     try {
-      await this.dbRun(`UPDATE company SET company_name=?, contact=?, address=? WHERE company_id=?`,
-        [name, contact, address, id], 'run');
+      await this.dbRun(
+        `UPDATE company SET company_name=?, contact=?, address=? WHERE company_id=?`,
+        [name, contact, address, id], 'run'
+      );
       if (!this.isDestroyed) { await this.loadCompanies(); this.showToast('Company updated successfully!'); }
     } catch (e: any) {
       if (!this.isDestroyed) {

@@ -352,6 +352,7 @@ export class ReorderComponent implements OnInit, OnDestroy {
     <p>Generated: ${dateStr} at ${timeStr}</p>
     ${company.gst ? `<p>GST: ${this.escapeHtml(company.gst)}</p>` : ''}
   </div>
+  <div><h4>Designed by DevInfantary </br> Contact : 03324645962</h4></div>
   <script>
     window.onload = () => { setTimeout(() => { window.print(); setTimeout(() => window.close(), 500); }, 150); };
   </script>

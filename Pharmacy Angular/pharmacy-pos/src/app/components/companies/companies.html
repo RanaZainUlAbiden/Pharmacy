@@ -64,7 +64,8 @@
           <th>Contact</th>
           <th>Address</th>
           <th>Actions</th>
-        </thead>
+        </tr>
+      </thead>
       <tbody>
         <tr *ngFor="let c of filteredCompanies; trackBy: trackById">
           <td class="company-name">
@@ -116,39 +117,33 @@
       <label for="fc">
         <span class="material-symbols-outlined">call</span>Contact Number *
       </label>
-      <input id="fc" name="fc" type="tel" class="form-control"
+      <!-- ✅ type="text" so any format is accepted (PTCL, mobile, 052-xxx, etc.) -->
+      <input id="fc" name="fc" type="text" class="form-control"
              [(ngModel)]="formContact"
-             placeholder="03XX-XXXXXXX"
+             placeholder="e.g. 0300-1234567 or 052-1234567"
              autocomplete="off"
              (blur)="validateContact()"
-             [class.input-error]="contactError"
-             maxlength="14">
+             [class.input-error]="contactError">
       <div class="validation-error" *ngIf="contactError">
         <span class="material-symbols-outlined">error</span>
         <span>{{ contactError }}</span>
       </div>
-      <div class="field-hint" *ngIf="!contactError">
-        <span class="material-symbols-outlined">info</span>
-        Format: 03XX-XXXXXXX or 03XXXXXXXXX
-      </div>
+      <!-- ✅ Removed the "Format: 03XX-XXXXXXX" hint entirely -->
     </div>
 
-    <!-- Address -->
+    <!-- Address (Optional) -->
     <div class="form-group">
       <label for="fa">
-        <span class="material-symbols-outlined">location_on</span>Address *
+        <!-- ✅ Removed the * — address is now optional -->
+        <span class="material-symbols-outlined">location_on</span>Address
+        <span class="optional-label">(optional)</span>
       </label>
       <textarea id="fa" name="fa" class="form-control"
                 [(ngModel)]="formAddress"
                 rows="3"
-                placeholder="Enter company address"
-                (blur)="validateAddress()"
-                [class.input-error]="addressError"
+                placeholder="Enter company address (optional)"
                 maxlength="255"></textarea>
-      <div class="validation-error" *ngIf="addressError">
-        <span class="material-symbols-outlined">error</span>
-        <span>{{ addressError }}</span>
-      </div>
+      <!-- ✅ No validation error shown for address -->
       <div class="char-count" *ngIf="formAddress">
         {{ formAddress.length }}/255
       </div>
@@ -158,7 +153,7 @@
       <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="isBusy">
         <span class="material-symbols-outlined">close</span>Cancel
       </button>
-      <button type="submit" class="btn-primary" [disabled]="isBusy || formInvalid">
+      <button type="submit" class="btn-primary">
         <span class="material-symbols-outlined">{{ formMode==='add' ? 'save' : 'update' }}</span>
         {{ formMode==='add' ? 'Save Company' : 'Update Company' }}
       </button>
@@ -180,7 +175,7 @@
       </div>
       <div class="info-row">
         <span class="material-symbols-outlined">location_on</span>
-        <span>{{ selectedCompany.address || 'No address' }}</span>
+        <span>{{ selectedCompany.address || 'No address provided' }}</span>
       </div>
     </div>
     <div class="profile-stats">
