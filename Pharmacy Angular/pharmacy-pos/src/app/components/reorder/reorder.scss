@@ -263,3 +263,48 @@ table {
   .toast-container { right: 1rem; left: 1rem; top: 1rem;
     .toast { min-width: unset; width: 100%; } }
 }
+/* ─────────────────────────────────────────────────────────────
+   ADD these rules to your existing reorder.scss
+   ───────────────────────────────────────────────────────────── */
+
+/* New column widths */
+.col-status  { width: 160px; }
+
+/* Out-of-stock row subtle highlight */
+.row-out-of-stock {
+  background: rgba(239, 68, 68, 0.04);
+}
+
+/* Stock status badge */
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  .badge-icon {
+    font-size: 14px;
+    font-variation-settings: 'FILL' 1;
+  }
+
+  /* Out of stock — red pill */
+  &.badge-out {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+  }
+
+  /* Low stock — amber pill */
+  &.badge-low {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+}
+
+/* Dropdown option hint text */
+.medicine-select option { font-weight: 500; }
