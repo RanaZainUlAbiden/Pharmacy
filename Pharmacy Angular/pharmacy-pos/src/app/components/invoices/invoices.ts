@@ -26,6 +26,12 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   // View mode
   showDetails = false;
   
+  // Pagination variables
+  currentPage = 1;
+  pageSize = 50;
+  totalInvoices = 0;
+  totalPages = 0;
+  
   // Company settings (from localStorage)
   companySettings: any = {
     name: 'Pharmacy POS',
@@ -38,6 +44,9 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   isLoading = false;
   isBusy = false;
   taxRate=0;
+  
+  // Debounce timer
+  private searchTimeout: any = null;
   
   // Toast
   toast: { message: string; type: 'success' | 'error' } | null = null;
@@ -53,8 +62,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-
-     // Get current tax rate
+    // Get current tax rate
     this.taxRate = this.taxService.getTaxRate();
 
     // Optional: subscribe to changes if tax can change dynamically
@@ -68,6 +76,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.isDestroyed = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
   }
 
   private showToast(msg: string, type: 'success' | 'error' = 'success') {
@@ -112,12 +121,23 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loadInvoices() {
+  async loadInvoices(resetPage: boolean = true) {
+    if (this.isDestroyed) return;
+    
+    if (resetPage) {
+      this.currentPage = 1;
+    }
+    
     this.isLoading = true;
     this.cdr.detectChanges();
 
     try {
-      const sql = `
+      let countSql = `
+        SELECT COUNT(DISTINCT s.sale_id) as total
+        FROM sales s
+      `;
+      
+      let dataSql = `
         SELECT 
           s.sale_id,
           s.invoice_number,
@@ -132,12 +152,54 @@ export class InvoicesComponent implements OnInit, OnDestroy {
         LEFT JOIN sale_items si ON s.sale_id = si.sale_id
         GROUP BY s.sale_id
         ORDER BY s.sale_date DESC
+        LIMIT ? OFFSET ?
       `;
       
-      this.invoices = await this.dbRun(sql);
-      this.applySearch();
+      let params: any[] = [];
       
-      console.log('Loaded invoices:', this.invoices.length);
+      // Apply search if exists
+      if (this.searchTerm && this.searchTerm.trim() !== '') {
+        const term = `%${this.searchTerm.trim()}%`;
+        countSql = `
+          SELECT COUNT(DISTINCT s.sale_id) as total
+          FROM sales s
+          LEFT JOIN customers c ON s.customer_id = c.customer_id
+          WHERE s.invoice_number LIKE ? OR c.full_name LIKE ?
+        `;
+        dataSql = `
+          SELECT 
+            s.sale_id,
+            s.invoice_number,
+            s.sale_date,
+            c.full_name as customer_name,
+            COUNT(si.sale_item_id) as item_count,
+            s.total_amount,
+            s.paid_amount,
+            (s.total_amount - s.paid_amount) as due_amount
+          FROM sales s
+          LEFT JOIN customers c ON s.customer_id = c.customer_id
+          LEFT JOIN sale_items si ON s.sale_id = si.sale_id
+          WHERE s.invoice_number LIKE ? OR c.full_name LIKE ?
+          GROUP BY s.sale_id
+          ORDER BY s.sale_date DESC
+          LIMIT ? OFFSET ?
+        `;
+        params = [term, term, this.pageSize, (this.currentPage - 1) * this.pageSize];
+      } else {
+        params = [this.pageSize, (this.currentPage - 1) * this.pageSize];
+      }
+      
+      // Get total count
+      const countResult = await this.dbRun(countSql, params.slice(0, params.length - 2));
+      this.totalInvoices = countResult[0]?.total || 0;
+      this.totalPages = Math.ceil(this.totalInvoices / this.pageSize);
+      
+      // Get paginated data
+      const result = await this.dbRun(dataSql, params);
+      this.invoices = result || [];
+      this.filteredInvoices = [...this.invoices];
+      
+      console.log(`Loaded ${this.invoices.length} invoices (Page ${this.currentPage} of ${this.totalPages})`);
       
     } catch (error) {
       console.error('Error loading invoices:', error);
@@ -149,22 +211,36 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   }
 
   applySearch() {
-    if (!this.searchTerm || this.searchTerm.trim() === '') {
-      this.filteredInvoices = [...this.invoices];
-      return;
-    }
-    
-    const term = this.searchTerm.toLowerCase().trim();
-    this.filteredInvoices = this.invoices.filter(inv => {
-      const invoiceNum = (inv.invoice_number || inv.sale_id?.toString() || '').toLowerCase();
-      const customerName = (inv.customer_name || '').toLowerCase();
-      return invoiceNum.includes(term) || customerName.includes(term);
-    });
+    // Search is now handled server-side in loadInvoices
+    // This method is kept for compatibility but not used
   }
 
   onSearchChange() {
-    this.applySearch();
-    this.cdr.detectChanges();
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    
+    this.searchTimeout = setTimeout(() => {
+      this.currentPage = 1; // Reset to first page on new search
+      this.loadInvoices(true);
+    }, 300);
+  }
+
+  // Pagination methods
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+    this.loadInvoices(false); // false = don't reset to page 1
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.goToPage(this.currentPage + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.goToPage(this.currentPage - 1);
+    }
   }
 
   async viewInvoiceDetails(invoice: any) {
@@ -296,15 +372,6 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   doc.text('Discount:', leftX, yPos);
   doc.text(this.formatCurrency(0), rightX, yPos, { align: 'right' });
   yPos += 5;
-
-  // doc.text(`Tax (${this.taxRate}%):`, leftX, yPos);
-  //   const taxAmount = this.selectedInvoice?.total_amount! * (this.taxRate / 100);
-  //   doc.text(this.formatCurrency(taxAmount), rightX, yPos, { align: 'right' });
-  //   yPos += 5;
-
-  //   doc.line(margin, yPos, pageWidth - margin, yPos);
-  //   yPos += 4;
-
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);

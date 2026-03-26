@@ -442,3 +442,48 @@ $card-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     .tab { font-size: 0.85rem; padding: 0.5rem 1rem; }
   }
 }
+
+
+// Pagination Styles
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-top: 1px solid $border-color;
+  
+  .page-btn {
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    &:hover:not(:disabled) {
+      background: $bg-light;
+      border-color: $primary-color;
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    span {
+      font-size: 20px;
+    }
+  }
+  
+  .page-info {
+    font-size: 0.9rem;
+    color: $text-dark;
+    background: $bg-light;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+  }
+}
