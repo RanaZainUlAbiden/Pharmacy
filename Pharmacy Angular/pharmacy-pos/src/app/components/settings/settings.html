@@ -11,7 +11,7 @@
   <div class="busy-spinner"></div>
 </div>
 
-<!-- ── Add User Modal ───────────────────────────────────────────── -->
+<!-- ── Add User Modal ─────────────────────────────────────────────────────── -->
 <div class="modal-overlay" *ngIf="showAddUserModal" (click)="closeAddUserModal()">
   <div class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -21,63 +21,40 @@
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
-
     <div class="modal-body">
       <div class="form-group">
         <label>Username</label>
-        <input
-          type="text"
-          class="form-control"
-          [(ngModel)]="newUserForm.username"
-          placeholder="Enter username"
-          (keyup.enter)="submitAddUser()"
-          #usernameInput
-        >
+        <input type="text" class="form-control" [(ngModel)]="newUserForm.username"
+          placeholder="Enter username" (keyup.enter)="submitAddUser()" #usernameInput>
       </div>
-
       <div class="form-group">
         <label>Password</label>
         <div class="password-wrapper">
-          <input
-            [type]="newUserForm.showPassword ? 'text' : 'password'"
-            class="form-control"
-            [(ngModel)]="newUserForm.password"
-            placeholder="Min 4 characters"
-            (keyup.enter)="submitAddUser()"
-          >
+          <input [type]="newUserForm.showPassword ? 'text' : 'password'" class="form-control"
+            [(ngModel)]="newUserForm.password" placeholder="Min 4 characters" (keyup.enter)="submitAddUser()">
           <button class="eye-btn" type="button" (click)="newUserForm.showPassword = !newUserForm.showPassword">
             <span class="material-symbols-outlined">{{ newUserForm.showPassword ? 'visibility_off' : 'visibility' }}</span>
           </button>
         </div>
       </div>
-
       <div class="form-group">
         <label>Confirm Password</label>
         <div class="password-wrapper">
-          <input
-            [type]="newUserForm.showConfirm ? 'text' : 'password'"
-            class="form-control"
-            [(ngModel)]="newUserForm.confirmPassword"
-            placeholder="Re-enter password"
-            (keyup.enter)="submitAddUser()"
-          >
+          <input [type]="newUserForm.showConfirm ? 'text' : 'password'" class="form-control"
+            [(ngModel)]="newUserForm.confirmPassword" placeholder="Re-enter password" (keyup.enter)="submitAddUser()">
           <button class="eye-btn" type="button" (click)="newUserForm.showConfirm = !newUserForm.showConfirm">
             <span class="material-symbols-outlined">{{ newUserForm.showConfirm ? 'visibility_off' : 'visibility' }}</span>
           </button>
         </div>
       </div>
-
       <div class="modal-error" *ngIf="addUserError">
-        <span class="material-symbols-outlined">error</span>
-        {{ addUserError }}
+        <span class="material-symbols-outlined">error</span>{{ addUserError }}
       </div>
     </div>
-
     <div class="modal-footer">
       <button class="btn-secondary" (click)="closeAddUserModal()" [disabled]="isBusy">Cancel</button>
       <button class="btn-primary" (click)="submitAddUser()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">person_add</span>
-        Add User
+        <span class="material-symbols-outlined">person_add</span>Add User
       </button>
     </div>
   </div>
@@ -86,46 +63,36 @@
 <!-- Header -->
 <div class="page-header">
   <div class="header-left">
-    <h1>
-      <span class="material-symbols-outlined">settings</span>
-      Settings
-    </h1>
+    <h1><span class="material-symbols-outlined">settings</span>Settings</h1>
   </div>
 </div>
 
-<!-- Settings Tabs -->
+<!-- Tabs -->
 <div class="settings-tabs">
   <button class="tab" [class.active]="activeTab === 'general'" (click)="activeTab = 'general'">
-    <span class="material-symbols-outlined">business</span>
-    General
+    <span class="material-symbols-outlined">business</span>General
   </button>
   <button class="tab" [class.active]="activeTab === 'users'" (click)="activeTab = 'users'">
-    <span class="material-symbols-outlined">people</span>
-    Users
+    <span class="material-symbols-outlined">people</span>Users
   </button>
   <button class="tab" [class.active]="activeTab === 'notifications'" (click)="activeTab = 'notifications'">
-    <span class="material-symbols-outlined">notifications</span>
-    Notifications
+    <span class="material-symbols-outlined">notifications</span>Notifications
   </button>
   <button class="tab" [class.active]="activeTab === 'backup'" (click)="activeTab = 'backup'">
-    <span class="material-symbols-outlined">backup</span>
-    Backup &amp; Restore
+    <span class="material-symbols-outlined">backup</span>Backup &amp; Restore
   </button>
 </div>
 
-<!-- ==================== GENERAL SETTINGS ==================== -->
+<!-- ==================== GENERAL ==================== -->
 <div class="settings-card" *ngIf="activeTab === 'general'">
   <div class="card-header">
-    <span class="material-symbols-outlined">business</span>
-    <h2>Company Information</h2>
+    <span class="material-symbols-outlined">business</span><h2>Company Information</h2>
   </div>
-
   <div class="settings-form">
     <div class="form-group">
       <label>Company Name</label>
       <input type="text" class="form-control" [(ngModel)]="companySettings.name" placeholder="Enter company name">
     </div>
-
     <div class="form-row">
       <div class="form-group">
         <label>Phone Number</label>
@@ -136,84 +103,61 @@
         <input type="email" class="form-control" [(ngModel)]="companySettings.email" placeholder="info@company.com">
       </div>
     </div>
-
     <div class="form-group">
       <label>Address</label>
       <textarea class="form-control" rows="3" [(ngModel)]="companySettings.address" placeholder="Enter company address"></textarea>
     </div>
-
     <div class="form-row">
       <div class="form-group">
         <label>Tax Rate (%)</label>
         <input type="number" class="form-control" [(ngModel)]="companySettings.taxRate" min="0" max="100" step="0.5">
       </div>
     </div>
-
     <div class="form-actions">
       <button class="btn-primary" (click)="saveCompanySettings()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">save</span>
-        Save Settings
+        <span class="material-symbols-outlined">save</span>Save Settings
       </button>
     </div>
   </div>
-
   <div class="info-note">
     <span class="material-symbols-outlined">info</span>
     <p>Company information appears on invoices and reports.</p>
   </div>
 </div>
 
-<!-- ==================== USER MANAGEMENT ==================== -->
+<!-- ==================== USERS ==================== -->
 <div class="settings-card" *ngIf="activeTab === 'users'">
   <div class="card-header">
-    <span class="material-symbols-outlined">admin_panel_settings</span>
-    <h2>User Management</h2>
+    <span class="material-symbols-outlined">admin_panel_settings</span><h2>User Management</h2>
   </div>
-
-  <!-- Current User Info -->
   <div class="current-user">
-    <div class="user-avatar">
-      <span class="material-symbols-outlined">account_circle</span>
-    </div>
+    <div class="user-avatar"><span class="material-symbols-outlined">account_circle</span></div>
     <div class="user-info">
       <h3>{{ currentUser?.username }}</h3>
       <p>Administrator &bull; Logged in since {{ currentUser?.created_at | date }}</p>
     </div>
   </div>
-
-  <!-- Change Password Section -->
   <div class="section">
     <div class="section-header">
-      <span class="material-symbols-outlined">lock</span>
-      <h3>Change Password</h3>
+      <span class="material-symbols-outlined">lock</span><h3>Change Password</h3>
     </div>
-
     <div class="password-form">
       <div class="form-group">
         <label>Current Password</label>
         <div class="password-wrapper">
-          <input
-            [type]="showCurrentPw ? 'text' : 'password'"
-            class="form-control"
-            [(ngModel)]="passwordForm.currentPassword"
-            placeholder="Enter current password"
-          >
+          <input [type]="showCurrentPw ? 'text' : 'password'" class="form-control"
+            [(ngModel)]="passwordForm.currentPassword" placeholder="Enter current password">
           <button class="eye-btn" type="button" (click)="showCurrentPw = !showCurrentPw">
             <span class="material-symbols-outlined">{{ showCurrentPw ? 'visibility_off' : 'visibility' }}</span>
           </button>
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>New Password</label>
           <div class="password-wrapper">
-            <input
-              [type]="showNewPw ? 'text' : 'password'"
-              class="form-control"
-              [(ngModel)]="passwordForm.newPassword"
-              placeholder="Min 4 characters"
-            >
+            <input [type]="showNewPw ? 'text' : 'password'" class="form-control"
+              [(ngModel)]="passwordForm.newPassword" placeholder="Min 4 characters">
             <button class="eye-btn" type="button" (click)="showNewPw = !showNewPw">
               <span class="material-symbols-outlined">{{ showNewPw ? 'visibility_off' : 'visibility' }}</span>
             </button>
@@ -222,32 +166,20 @@
         <div class="form-group">
           <label>Confirm New Password</label>
           <div class="password-wrapper">
-            <input
-              [type]="showConfirmPw ? 'text' : 'password'"
-              class="form-control"
-              [(ngModel)]="passwordForm.confirmPassword"
-              placeholder="Confirm new password"
-            >
+            <input [type]="showConfirmPw ? 'text' : 'password'" class="form-control"
+              [(ngModel)]="passwordForm.confirmPassword" placeholder="Confirm new password">
             <button class="eye-btn" type="button" (click)="showConfirmPw = !showConfirmPw">
               <span class="material-symbols-outlined">{{ showConfirmPw ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
         </div>
       </div>
-
-      <!-- Password strength indicator -->
       <div class="pw-strength" *ngIf="passwordForm.newPassword">
         <div class="pw-bar">
-          <div
-            class="pw-fill"
-            [style.width]="pwStrength.pct + '%'"
-            [class]="pwStrength.cls"
-          ></div>
+          <div class="pw-fill" [style.width]="pwStrength.pct + '%'" [class]="pwStrength.cls"></div>
         </div>
         <span [class]="'pw-label ' + pwStrength.cls">{{ pwStrength.label }}</span>
       </div>
-
-      <!-- Match indicator -->
       <div class="pw-match" *ngIf="passwordForm.confirmPassword">
         <span class="material-symbols-outlined" [class.match]="passwordsMatch" [class.no-match]="!passwordsMatch">
           {{ passwordsMatch ? 'check_circle' : 'cancel' }}
@@ -256,37 +188,27 @@
           {{ passwordsMatch ? 'Passwords match' : 'Passwords do not match' }}
         </span>
       </div>
-
       <div class="form-actions">
         <button class="btn-primary" (click)="changePassword()" [disabled]="isBusy || !passwordsMatch">
-          <span class="material-symbols-outlined">vpn_key</span>
-          Change Password
+          <span class="material-symbols-outlined">vpn_key</span>Change Password
         </button>
         <button class="btn-secondary" (click)="clearPasswordForm()" [disabled]="isBusy">
-          <span class="material-symbols-outlined">clear</span>
-          Clear
+          <span class="material-symbols-outlined">clear</span>Clear
         </button>
       </div>
     </div>
   </div>
-
-  <!-- User List -->
   <div class="section">
     <div class="section-header">
-      <span class="material-symbols-outlined">group</span>
-      <h3>System Users</h3>
+      <span class="material-symbols-outlined">group</span><h3>System Users</h3>
       <button class="btn-add" (click)="openAddUserModal()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">add</span>
-        Add User
+        <span class="material-symbols-outlined">add</span>Add User
       </button>
     </div>
-
     <div class="user-list">
       <div *ngFor="let user of users" class="user-item">
         <div class="user-item-info">
-          <div class="user-icon-wrap">
-            <span class="material-symbols-outlined">person</span>
-          </div>
+          <div class="user-icon-wrap"><span class="material-symbols-outlined">person</span></div>
           <div>
             <strong>{{ user.username }}</strong>
             <span class="user-date">Created: {{ formatDate(user.created_at) }}</span>
@@ -296,55 +218,40 @@
           <span class="user-badge" [class.self]="user.user_id === currentUser?.user_id">
             {{ user.user_id === currentUser?.user_id ? 'You' : 'User' }}
           </span>
-          <button
-            class="delete-user"
-            (click)="deleteUser(user.user_id, user.username)"
-            [disabled]="isBusy || user.user_id === currentUser?.user_id"
-            title="{{ user.user_id === currentUser?.user_id ? 'Cannot delete own account' : 'Delete user' }}"
-          >
+          <button class="delete-user" (click)="deleteUser(user.user_id, user.username)"
+            [disabled]="isBusy || user.user_id === currentUser?.user_id">
             <span class="material-symbols-outlined">delete</span>
           </button>
         </div>
       </div>
-
       <div *ngIf="users.length === 0" class="no-data">
-        <span class="material-symbols-outlined">group</span>
-        <p>No users found</p>
+        <span class="material-symbols-outlined">group</span><p>No users found</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ==================== NOTIFICATION SETTINGS ==================== -->
+<!-- ==================== NOTIFICATIONS ==================== -->
 <div class="settings-card" *ngIf="activeTab === 'notifications'">
   <div class="card-header">
-    <span class="material-symbols-outlined">notifications_active</span>
-    <h2>Alert Settings</h2>
+    <span class="material-symbols-outlined">notifications_active</span><h2>Alert Settings</h2>
   </div>
-
   <div class="settings-form">
     <div class="toggle-group">
       <div class="toggle-item">
         <div class="toggle-info">
           <span class="material-symbols-outlined">warning</span>
-          <div>
-            <h4>Low Stock Alerts</h4>
-            <p>Get notified when medicine stock falls below threshold</p>
-          </div>
+          <div><h4>Low Stock Alerts</h4><p>Get notified when medicine stock falls below threshold</p></div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" [(ngModel)]="notifications.lowStockAlert">
           <span class="toggle-slider"></span>
         </label>
       </div>
-
       <div class="toggle-item">
         <div class="toggle-info">
           <span class="material-symbols-outlined">event_busy</span>
-          <div>
-            <h4>Expiry Alerts</h4>
-            <p>Get notified when medicines are about to expire</p>
-          </div>
+          <div><h4>Expiry Alerts</h4><p>Get notified when medicines are about to expire</p></div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" [(ngModel)]="notifications.expiringAlert">
@@ -352,25 +259,21 @@
         </label>
       </div>
     </div>
-
     <div class="form-row">
       <div class="form-group">
         <label>Low Stock Threshold (units)</label>
         <input type="number" class="form-control" [(ngModel)]="notifications.lowStockThreshold" min="1" step="1">
         <small>Alert when stock falls below this number</small>
       </div>
-
       <div class="form-group">
         <label>Expiry Alert Days</label>
         <input type="number" class="form-control" [(ngModel)]="notifications.expiringDays" min="1" max="365" step="1">
         <small>Alert when expiry is within this many days</small>
       </div>
     </div>
-
     <div class="form-actions">
       <button class="btn-primary" (click)="saveNotificationSettings()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">save</span>
-        Save Settings
+        <span class="material-symbols-outlined">save</span>Save Settings
       </button>
     </div>
   </div>
@@ -379,75 +282,190 @@
 <!-- ==================== BACKUP & RESTORE ==================== -->
 <div class="settings-card" *ngIf="activeTab === 'backup'">
   <div class="card-header">
-    <span class="material-symbols-outlined">database</span>
-    <h2>Database Management</h2>
+    <span class="material-symbols-outlined">database</span><h2>Database Management</h2>
   </div>
 
-  <!-- Backup Section -->
+  <!-- Backup -->
   <div class="section">
     <div class="section-header">
-      <span class="material-symbols-outlined">backup</span>
-      <h3>Backup Database</h3>
+      <span class="material-symbols-outlined">backup</span><h3>Backup Database</h3>
     </div>
-
     <div class="backup-info">
-      <p>Create a backup of your entire database. This includes all medicines, customers, sales, and settings.</p>
+      <p>Create a backup of your entire database including all medicines, sales, and settings.</p>
       <div class="last-backup" *ngIf="lastBackup">
         <span class="material-symbols-outlined">schedule</span>
         <span>Last backup: {{ lastBackup }}</span>
       </div>
     </div>
-
     <div class="form-actions">
       <button class="btn-primary" (click)="backupDatabase()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">backup</span>
-        Create Backup
+        <span class="material-symbols-outlined">backup</span>Create Backup
       </button>
     </div>
   </div>
 
-  <!-- Restore Section -->
+  <!-- Restore -->
   <div class="section">
     <div class="section-header">
-      <span class="material-symbols-outlined">restore</span>
-      <h3>Restore Database</h3>
+      <span class="material-symbols-outlined">restore</span><h3>Restore Database</h3>
     </div>
-
     <div class="warning-box">
       <span class="material-symbols-outlined">warning</span>
-      <div>
-        <strong>Warning!</strong>
-        <p>Restoring will overwrite all current data. This action cannot be undone.</p>
-      </div>
+      <div><strong>Warning!</strong><p>Restoring will overwrite all current data. This action cannot be undone.</p></div>
     </div>
-
     <div class="form-actions">
       <button class="btn-danger" (click)="restoreDatabase()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">restore</span>
-        Restore from Backup
+        <span class="material-symbols-outlined">restore</span>Restore from Backup
       </button>
     </div>
   </div>
+
+  <!-- ══════════ CSV IMPORT SECTION ══════════ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="material-symbols-outlined">upload_file</span>
+      <h3>Import Medicines from CSV</h3>
+    </div>
+    <p class="section-desc">
+      First time setup? Import all your medicines and opening stock from an Excel/CSV file.
+    </p>
+
+    <!-- IDLE state -->
+    <ng-container *ngIf="importStep === 'idle'">
+      <div class="import-template-row">
+        <div class="import-template-info">
+          <span class="material-symbols-outlined">description</span>
+          <div>
+            <strong>Step 1 — Download the template</strong>
+            <p>Fill it in Excel or Google Sheets, then save as CSV and upload below.</p>
+            <code class="col-hint">Columns: Medicine Name | Sale Price | Purchase Price | Min Threshold | Opening Stock | Packing</code>
+          </div>
+        </div>
+        <button class="btn-outline-sm" (click)="downloadTemplate()">
+          <span class="material-symbols-outlined">download</span>Download Template
+        </button>
+      </div>
+
+      <label class="import-drop-zone" for="csvImportFile">
+        <span class="material-symbols-outlined">cloud_upload</span>
+        <p><strong>Step 2 — Click to select your CSV file</strong></p>
+        <p class="dz-hint">Supports .csv files — exported from Excel or Google Sheets</p>
+        <input id="csvImportFile" type="file" accept=".csv" (change)="onCSVFilePicked($event)" hidden />
+      </label>
+    </ng-container>
+
+    <!-- PREVIEW state -->
+    <ng-container *ngIf="importStep === 'preview'">
+      <div class="import-chips">
+        <span class="ichip ichip-total">
+          <span class="material-symbols-outlined">table_rows</span>{{ importParsedRows.length }} Rows
+        </span>
+        <span class="ichip ichip-valid">
+          <span class="material-symbols-outlined">check_circle</span>{{ importValidRows.length }} Valid
+        </span>
+        <span class="ichip ichip-invalid" *ngIf="importInvalidRows.length > 0">
+          <span class="material-symbols-outlined">error</span>{{ importInvalidRows.length }} Invalid
+        </span>
+      </div>
+
+      <div class="warning-box amber" *ngIf="importInvalidRows.length > 0">
+        <span class="material-symbols-outlined">warning</span>
+        <div>
+          <strong>{{ importInvalidRows.length }} rows will be skipped:</strong>
+          <ul>
+            <li *ngFor="let row of importInvalidRows">
+              Row {{ row.rowNum }}: <em>{{ row.name || '(no name)' }}</em> — {{ row.error }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="import-preview-wrap">
+        <p class="preview-hint">Showing first {{ importPreviewRows.length }} of {{ importParsedRows.length }} rows</p>
+        <table class="import-preview-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Medicine Name</th><th>Sale Price</th>
+              <th>Opening Stock</th><th>Packing</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of importPreviewRows" [class.row-invalid]="!row.valid">
+              <td>{{ row.rowNum }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.salePrice }}</td>
+              <td>{{ row.openingStock }}</td>
+              <td>{{ row.packingName || 'Default' }}</td>
+              <td>
+                <span class="istatus" [class.ok]="row.valid" [class.err]="!row.valid">
+                  {{ row.valid ? '✓ OK' : row.error }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="import-progress" *ngIf="importIsRunning">
+        <div class="iprog-label">Importing... {{ importProgress }}%</div>
+        <div class="iprog-bar"><div class="iprog-fill" [style.width.%]="importProgress"></div></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-secondary" (click)="resetImport()" [disabled]="importIsRunning">
+          <span class="material-symbols-outlined">arrow_back</span>Back
+        </button>
+        <button class="btn-primary" (click)="startCSVImport()" [disabled]="importIsRunning || importValidRows.length === 0">
+          <span class="material-symbols-outlined">{{ importIsRunning ? 'hourglass_top' : 'upload' }}</span>
+          {{ importIsRunning ? 'Importing...' : 'Import ' + importValidRows.length + ' Medicines' }}
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- DONE state -->
+    <ng-container *ngIf="importStep === 'done'">
+      <div class="import-done">
+        <span class="material-symbols-outlined import-done-icon">task_alt</span>
+        <h4>Import Complete!</h4>
+        <div class="import-results">
+          <div class="ires ires-added">
+            <span class="ires-num">{{ importedCount }}</span>
+            <span class="ires-lbl">Added</span>
+          </div>
+          <div class="ires ires-skipped">
+            <span class="ires-num">{{ skippedCount }}</span>
+            <span class="ires-lbl">Already Existed</span>
+          </div>
+          <div class="ires ires-error" *ngIf="importErrorCount > 0">
+            <span class="ires-num">{{ importErrorCount }}</span>
+            <span class="ires-lbl">Errors</span>
+          </div>
+        </div>
+        <p class="import-done-hint">Opening stock added. Medicines are ready to use in Sales &amp; Reorder.</p>
+        <button class="btn-outline-sm" (click)="resetImport()">
+          <span class="material-symbols-outlined">upload_file</span>Import Another File
+        </button>
+      </div>
+    </ng-container>
+  </div>
+  <!-- ══════════ END CSV IMPORT ══════════ -->
 
   <!-- Danger Zone -->
   <div class="section danger-zone">
     <div class="section-header">
-      <span class="material-symbols-outlined">dangerous</span>
-      <h3>Danger Zone</h3>
+      <span class="material-symbols-outlined">dangerous</span><h3>Danger Zone</h3>
     </div>
-
     <div class="warning-box critical">
       <span class="material-symbols-outlined">skull</span>
       <div>
         <strong>Clear All Data</strong>
-        <p>This will permanently delete ALL data from the database. This action cannot be undone.</p>
+        <p>This will permanently delete ALL data. This action cannot be undone.</p>
       </div>
     </div>
-
     <div class="form-actions">
       <button class="btn-danger-outline" (click)="clearData()" [disabled]="isBusy">
-        <span class="material-symbols-outlined">delete_forever</span>
-        Clear All Data
+        <span class="material-symbols-outlined">delete_forever</span>Clear All Data
       </button>
     </div>
   </div>

@@ -4,7 +4,6 @@ const fs = require('fs');
 
 class DatabaseManager {
     constructor() {
-        // Store database in user's app data folder
         const userDataPath = process.env.APPDATA || 
             (process.platform === 'darwin' ? 
                 process.env.HOME + '/Library/Application Support' : 
@@ -12,7 +11,6 @@ class DatabaseManager {
         
         const appDataPath = path.join(userDataPath, 'pharmacy-pos');
         
-        // Create directory if it doesn't exist
         if (!fs.existsSync(appDataPath)) {
             fs.mkdirSync(appDataPath, { recursive: true });
         }
@@ -44,19 +42,16 @@ class DatabaseManager {
     createTables() {
         return new Promise((resolve, reject) => {
             const schema = `
-                -- Categories table
                 CREATE TABLE IF NOT EXISTS categories (
                     category_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category_name TEXT NOT NULL
                 );
 
-                -- Packing table
                 CREATE TABLE IF NOT EXISTS packing (
                     packing_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     packing_name TEXT NOT NULL UNIQUE
                 );
 
-                -- Company (suppliers) table
                 CREATE TABLE IF NOT EXISTS company (
                     company_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     company_name TEXT NOT NULL,
@@ -64,7 +59,6 @@ class DatabaseManager {
                     address TEXT NOT NULL
                 );
 
-                -- Customers table
                 CREATE TABLE IF NOT EXISTS customers (
                     customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     full_name TEXT NOT NULL UNIQUE,
@@ -72,7 +66,6 @@ class DatabaseManager {
                     address TEXT
                 );
 
-                -- Medicines table
                 CREATE TABLE IF NOT EXISTS medicines (
                     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
@@ -84,7 +77,6 @@ class DatabaseManager {
                     UNIQUE(name)
                 );
 
-                -- Purchase batches table
                 CREATE TABLE IF NOT EXISTS purchase_batches (
                     purchase_batch_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     company_id INTEGER NOT NULL,
@@ -96,7 +88,6 @@ class DatabaseManager {
                     FOREIGN KEY (company_id) REFERENCES company(company_id)
                 );
 
-                -- Batch items table
                 CREATE TABLE IF NOT EXISTS batch_items (
                     batch_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     purchase_batch_id INTEGER NOT NULL,
@@ -110,7 +101,6 @@ class DatabaseManager {
                     FOREIGN KEY (product_id) REFERENCES medicines(product_id)
                 );
 
-                -- Sales table with invoice_number
                 CREATE TABLE IF NOT EXISTS sales (
                     sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     customer_id INTEGER NOT NULL,
@@ -121,7 +111,6 @@ class DatabaseManager {
                     FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
                 );
 
-                -- Sale items table
                 CREATE TABLE IF NOT EXISTS sale_items (
                     sale_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     sale_id INTEGER NOT NULL,
@@ -133,7 +122,6 @@ class DatabaseManager {
                     FOREIGN KEY (batch_item_id) REFERENCES batch_items(batch_item_id)
                 );
 
-                -- Customer payment records
                 CREATE TABLE IF NOT EXISTS customerpricerecord (
                     record_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     customer_id INTEGER NOT NULL,
@@ -145,7 +133,6 @@ class DatabaseManager {
                     FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
                 );
 
-                -- Payment records to suppliers
                 CREATE TABLE IF NOT EXISTS payment_records (
                     payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     company_id INTEGER NOT NULL,
@@ -155,7 +142,6 @@ class DatabaseManager {
                     FOREIGN KEY (company_id) REFERENCES company(company_id) ON DELETE CASCADE
                 );
 
-                -- Stock audit log
                 CREATE TABLE IF NOT EXISTS stock_log (
                     log_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     batch_id INTEGER NOT NULL,
@@ -166,7 +152,6 @@ class DatabaseManager {
                     FOREIGN KEY (batch_id) REFERENCES batch_items(batch_item_id) ON DELETE CASCADE
                 );
 
-                -- Users table
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT NOT NULL UNIQUE,
@@ -174,7 +159,6 @@ class DatabaseManager {
                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
 
-                -- Create indexes
                 CREATE INDEX IF NOT EXISTS idx_medicines_name ON medicines(name);
                 CREATE INDEX IF NOT EXISTS idx_batch_items_expiry ON batch_items(expiry_date);
                 CREATE INDEX IF NOT EXISTS idx_batch_items_product ON batch_items(product_id);
@@ -185,7 +169,6 @@ class DatabaseManager {
                 CREATE INDEX IF NOT EXISTS idx_customer_payments ON customerpricerecord(customer_id);
                 CREATE INDEX IF NOT EXISTS idx_stock_log_date ON stock_log(log_date);
 
-                -- Insert default data
                 INSERT OR IGNORE INTO categories (category_name) VALUES 
                     ('Antibiotic'), ('Vaccine'), ('Painkiller'), ('Vitamin'), 
                     ('Antifungal'), ('Antiparasitic'), ('Hormone'), ('Disinfectant'), 
@@ -202,7 +185,6 @@ class DatabaseManager {
                     ('walkin', '9090909090', 'walkin');
             `;
 
-            // SQLite can only execute one statement at a time
             const statements = schema.split(';').filter(s => s.trim());
             
             const runNext = (index) => {
@@ -224,21 +206,35 @@ class DatabaseManager {
         });
     }
 
+    // ── FIXED query method ────────────────────────────────────────────────────
+    // 'run' method now correctly returns { lastID, changes } instead of undefined
     query(sql, params = [], method = 'all') {
         return new Promise((resolve, reject) => {
             if (!this.initialized) {
                 reject(new Error('Database not initialized'));
                 return;
             }
-            
-            this.db[method](sql, params, (err, result) => {
-                if (err) reject(err);
-                else resolve(result);
-            });
+
+            if (method === 'run') {
+                // sqlite3 'run' uses 'this' context for lastID/changes — must use function()
+                this.db.run(sql, params, function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        // Return lastID and changes so Angular side can use result.lastID
+                        resolve({ lastID: this.lastID, changes: this.changes });
+                    }
+                });
+            } else {
+                // 'all', 'get', 'each' work normally
+                this.db[method](sql, params, (err, result) => {
+                    if (err) reject(err);
+                    else resolve(result);
+                });
+            }
         });
     }
 
-    // Get current stock with batch info
     async getCurrentStock() {
         const sql = `
             SELECT 
@@ -257,7 +253,6 @@ class DatabaseManager {
         return this.query(sql);
     }
 
-    // Get low stock items
     async getLowStock() {
         const sql = `
             SELECT 
@@ -288,7 +283,6 @@ class DatabaseManager {
         return this.query(sql);
     }
 
-    // Get expiring items
     async getExpiringItems(days = 60) {
         const sql = `
             SELECT 
@@ -309,7 +303,6 @@ class DatabaseManager {
         return this.query(sql, [days]);
     }
 
-    // Get daily sales
     async getDailySales() {
         const sql = `
             SELECT 
@@ -324,7 +317,6 @@ class DatabaseManager {
         return this.query(sql);
     }
 
-    // Process a sale with items (UPDATED with invoice_number)
     async createSale(saleData, items) {
         const db = this.db;
         
@@ -333,7 +325,6 @@ class DatabaseManager {
                 db.run('BEGIN TRANSACTION');
                 
                 try {
-                    // Insert sale with invoice_number
                     const insertSale = `
                         INSERT INTO sales (customer_id, total_amount, paid_amount, invoice_number, sale_date)
                         VALUES (?, ?, ?, ?, datetime('now'))
@@ -344,18 +335,12 @@ class DatabaseManager {
                     db.run(insertSale, 
                         [saleData.customer_id, saleData.total_amount, saleData.paid_amount, saleData.invoice_number],
                         function(err) {
-                            if (err) {
-                                db.run('ROLLBACK');
-                                reject(err);
-                                return;
-                            }
+                            if (err) { db.run('ROLLBACK'); reject(err); return; }
                             saleId = this.lastID;
                             
-                            // Insert sale items and update batch quantities
                             let completed = 0;
                             
                             for (const item of items) {
-                                // Insert sale item
                                 const insertItem = `
                                     INSERT INTO sale_items (sale_id, batch_item_id, quantity, price, discount)
                                     VALUES (?, ?, ?, ?, ?)
@@ -364,13 +349,8 @@ class DatabaseManager {
                                 db.run(insertItem,
                                     [saleId, item.batch_item_id, item.quantity, item.price, item.discount || 0],
                                     function(err) {
-                                        if (err) {
-                                            db.run('ROLLBACK');
-                                            reject(err);
-                                            return;
-                                        }
+                                        if (err) { db.run('ROLLBACK'); reject(err); return; }
                                         
-                                        // Update batch quantity
                                         const updateBatch = `
                                             UPDATE batch_items 
                                             SET quantity_remaining = quantity_remaining - ?
@@ -378,13 +358,8 @@ class DatabaseManager {
                                         `;
                                         
                                         db.run(updateBatch, [item.quantity, item.batch_item_id], function(err) {
-                                            if (err) {
-                                                db.run('ROLLBACK');
-                                                reject(err);
-                                                return;
-                                            }
+                                            if (err) { db.run('ROLLBACK'); reject(err); return; }
                                             
-                                            // Add to stock log
                                             const insertLog = `
                                                 INSERT INTO stock_log (batch_id, change_type, quantity_change, remarks)
                                                 VALUES (?, 'SALE', ?, ?)
@@ -393,29 +368,19 @@ class DatabaseManager {
                                             db.run(insertLog, 
                                                 [item.batch_item_id, -item.quantity, `Sale #${saleId}`],
                                                 function(err) {
-                                                    if (err) {
-                                                        db.run('ROLLBACK');
-                                                        reject(err);
-                                                        return;
-                                                    }
+                                                    if (err) { db.run('ROLLBACK'); reject(err); return; }
                                                     
                                                     completed++;
                                                     if (completed === items.length) {
-                                                        // If payment is less than total, add to customer payment record
                                                         if (saleData.paid_amount < saleData.total_amount) {
                                                             const insertPaymentRecord = `
                                                                 INSERT INTO customerpricerecord (customer_id, date, payment, remarks, sale_id)
                                                                 VALUES (?, date('now'), ?, 'Partial payment', ?)
                                                             `;
-                                                            
                                                             db.run(insertPaymentRecord,
                                                                 [saleData.customer_id, saleData.paid_amount, saleId],
                                                                 function(err) {
-                                                                    if (err) {
-                                                                        db.run('ROLLBACK');
-                                                                        reject(err);
-                                                                        return;
-                                                                    }
+                                                                    if (err) { db.run('ROLLBACK'); reject(err); return; }
                                                                     db.run('COMMIT');
                                                                     resolve(saleId);
                                                                 }
@@ -439,6 +404,49 @@ class DatabaseManager {
                 }
             });
         });
+    }
+
+    // ── Backup ────────────────────────────────────────────────────────────────
+    async backup() {
+        try {
+            const { dialog } = require('electron');
+            const result = await dialog.showSaveDialog({
+                title: 'Save Database Backup',
+                defaultPath: `pharmacy-backup-${new Date().toISOString().split('T')[0]}.db`,
+                filters: [{ name: 'Database', extensions: ['db'] }]
+            });
+            if (result.canceled || !result.filePath) {
+                return { success: false, path: null };
+            }
+            fs.copyFileSync(this.dbFile, result.filePath);
+            return { success: true, path: result.filePath };
+        } catch (err) {
+            console.error('Backup error:', err);
+            return { success: false, error: err.message };
+        }
+    }
+
+    // ── Restore ───────────────────────────────────────────────────────────────
+    async restore() {
+        try {
+            const { dialog } = require('electron');
+            const result = await dialog.showOpenDialog({
+                title: 'Select Backup File',
+                filters: [{ name: 'Database', extensions: ['db'] }],
+                properties: ['openFile']
+            });
+            if (result.canceled || !result.filePaths.length) {
+                return { success: false };
+            }
+            // Close current DB connection, copy file, reopen
+            await new Promise((res) => this.db.close(res));
+            fs.copyFileSync(result.filePaths[0], this.dbFile);
+            await this.initialize();
+            return { success: true };
+        } catch (err) {
+            console.error('Restore error:', err);
+            return { success: false, error: err.message };
+        }
     }
 }
 
